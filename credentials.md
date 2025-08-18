@@ -1,0 +1,7 @@
+SUPABASE SERVICE ROLE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydXFkam9uenhrendzc2x6cGRsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTMwMDk5MiwiZXhwIjoyMDcwODc2OTkyfQ.QK-J3x5kLFmcAOIAPq5b22FmPp2rVs0-8Qspi5nG_Dw
+
+Password: Sazhdajh91!
+
+project-ref=xruqdjonzxkzwsslzpdl
+
+"SUPABASE_ACCESS_TOKEN": "sbp_33a95635441729b588d554f9bb8f57495d4b868e"

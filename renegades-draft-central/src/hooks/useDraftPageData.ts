@@ -1,0 +1,313 @@
+import { useState, useEffect, useMemo } from 'react';
+import { usePlayers, Player as PlayerType } from '@/hooks/usePlayers';
+import { useTeams } from '@/hooks/useTeams';
+import { useDraftState, DraftPickWithRelations, DraftSettings } from '@/hooks/useDraftState';
+import { useTeamPresence, ConnectionStatus } from '@/hooks/useTeamPresence';
+import { useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import useTeamKeepers
+import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Database, Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+
+interface DraftPageData {
+  profile: Profile | null;
+  players: PlayerType[]; // Changed from playersData to players
+  teamsData: { id: string; name: string }[];
+  currentPickIndex: number;
+  totalPicks: number;
+  completedPicks: number;
+  draftPicks: DraftPickWithRelations[];
+  isDraftComplete: boolean;
+  currentTeamId: string | null;
+  draftSettings: DraftSettings;
+  isLoadingDraftState: boolean;
+  currentPick: DraftPickWithRelations | null;
+  progress: number;
+  activeTeams: { teamId: string; teamName: string }[];
+  connectionStatus: ConnectionStatus;
+  selectedPlayer: PlayerType | null;
+  setSelectedPlayer: (player: PlayerType | null) => void;
+  selectedTeam: string;
+  setSelectedTeam: (teamName: string) => void;
+  isMakingPick: boolean;
+  setIsMakingPick: (isMaking: boolean) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  draftView: 'board' | 'timeline';
+  setDraftView: (view: 'board' | 'timeline') => void;
+  isMobile: boolean;
+  navigate: (path: string) => void;
+  canMakePick: boolean;
+  handleSelectPlayer: (player: PlayerType) => void;
+  handleConfirmPick: () => Promise<void>;
+  getDraftedPlayersForTeam: (teamName: string) => (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
+  draftStats: {
+    totalPicks: number;
+    completedPicks: number;
+    availablePlayers: number;
+    progress: number;
+  };
+  selectedTeamId: string;
+  currentSeason: string;
+  isLoading: boolean;
+}
+
+export const useDraftPageData = (): DraftPageData => {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const { data: playersDataRaw, isLoading: isLoadingPlayers } = usePlayers();
+  const { data: teamsDataRaw, isLoading: isLoadingTeams } = useTeams();
+  const teamsData = useMemo(() => (teamsDataRaw || []) as { id: string; name: string }[], [teamsDataRaw]);
+  const {
+    currentPickIndex,
+    totalPicks,
+    completedPicks,
+    draftPicks,
+    isDraftComplete,
+    currentTeamId,
+    draftSettings,
+    isLoadingDraftState,
+    currentPick,
+    progress,
+  } = useDraftState();
+  const { activeTeams, connectionStatus } = useTeamPresence();
+  const currentSeason = '2025-26';
+  const { data: allKeepersRaw, isLoading: isLoadingKeepers } = useTeamKeepers({ teamId: '', season: currentSeason });
+  const allKeepers = useMemo(() => (allKeepersRaw || []) as Tables<'players'>[], [allKeepersRaw]);
+
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerType | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [isMakingPick, setIsMakingPick] = useState(false);
+  const [activeTab, setActiveTab] = useState('board');
+  const [draftView, setDraftView] = useState<'board' | 'timeline'>('board');
+
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProfile = async (session: { user?: { id: string } } | null) => {
+      if (session?.user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setProfile(null);
+        } else {
+          setProfile(data);
+        }
+      } else {
+        setProfile(null);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        fetchProfile(session);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetchProfile(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (teamsData.length > 0 && !selectedTeam) {
+      setSelectedTeam(teamsData[0].name);
+    }
+  }, [teamsData, selectedTeam]);
+
+  // Process players data to mark drafted and keeper players
+  const players = useMemo(() => {
+    const draftedPlayerIds = new Set(draftPicks.filter(pick => pick.player_id).map(pick => pick.player_id));
+    const keeperPlayerIds = new Set(allKeepers.map(keeper => keeper.id));
+
+    return (playersDataRaw || []).map(player => ({
+      ...player,
+      is_drafted: draftedPlayerIds.has(player.id),
+      is_keeper: keeperPlayerIds.has(player.id),
+    }));
+  }, [playersDataRaw, draftPicks, allKeepers]);
+
+  console.log('useDraftPageData - playersDataRaw:', playersDataRaw);
+  console.log('useDraftPageData - allKeepers:', allKeepers);
+  console.log('useDraftPageData - processed players:', players);
+
+  const teams = teamsData.map(team => team.name);
+
+  const draftPicksFormatted = draftPicks.map((pick, index) => ({
+    round: pick.round,
+    pick: pick.pick_number,
+    overallPick: index + 1,
+    team: pick.current_team?.name || 'Unknown',
+    player: pick.player ? {
+      id: pick.player.id,
+      name: pick.player.name,
+      position: pick.player.position,
+      nbaTeam: pick.player.nba_team,
+    } : undefined,
+  }));
+
+  const canMakePick = currentPick && !currentPick.is_used;
+
+  const handleSelectPlayer = (player: PlayerType) => {
+    if (!canMakePick) return;
+    const fullPlayer = players.find(p => p.id === player.id); // Use 'players' instead of 'playersData'
+    setSelectedPlayer(fullPlayer || player);
+    // With the updated flow, we no longer need to open a dialog here
+    // The PlayerDetailsModal will handle the draft pick process directly
+  };
+
+  const handleConfirmPick = async () => {
+    if (!selectedPlayer || !currentPick) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('team_id, teams(name)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!userProfile?.team_id) {
+        toast({
+          title: "Error",
+          description: "You are not assigned to a team. Please contact the draft administrator.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (currentPick.current_team_id !== userProfile.team_id) {
+        toast({
+          title: "Error",
+          description: `It's not your team's turn to pick. ${currentPick.current_team?.name} is on the clock.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setIsMakingPick(true);
+
+    try {
+      const result = await makeDraftPick(selectedPlayer.id);
+
+      setSelectedPlayer(null);
+      setShowPickDialog(false);
+
+      toast({
+        title: "Pick confirmed!",
+        description: `${result.current_team.name} selected ${selectedPlayer.name} with pick #${currentPick.pick_number}`,
+      });
+    } catch (error: unknown) {
+      console.error('Error making draft pick:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      if (errorMessage.includes('already been drafted')) {
+        toast({
+          title: "Error",
+          description: "This player has already been drafted by another team.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('already been used')) {
+        toast({
+          title: "Error",
+          description: "This draft pick has already been used. The draft state may have changed.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('is a keeper')) {
+        toast({
+          title: "Error",
+          description: "This player is a keeper and cannot be drafted.",
+          variant: "destructive",
+        });
+      }
+      else {
+        toast({
+          title: "Error",
+          description: errorMessage || "Failed to make draft pick. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsMakingPick(false);
+    }
+  };
+
+  const getDraftedPlayersForTeam = (teamName: string) => {
+    return draftPicksFormatted
+      .filter(pick => pick.team === teamName && pick.player && !players.find(p => p.id === pick.player?.id)?.is_keeper) // Use 'players' instead of 'playersData'
+      .map(pick => {
+        const fullPlayer = players.find(p => p.id === pick.player?.id); // Use 'players' instead of 'playersData'
+        if (fullPlayer) {
+          return {
+            ...fullPlayer,
+            round: pick.round,
+            pick: pick.pick,
+            overallPick: pick.overallPick,
+            nbaTeam: pick.player!.nbaTeam,
+          };
+        }
+        return null;
+      }).filter(Boolean) as (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
+  };
+
+  const draftStats = {
+    totalPicks: totalPicks,
+    completedPicks: completedPicks,
+    availablePlayers: players.filter(p => !p.is_drafted && !p.is_keeper).length, // Corrected property name
+    progress: progress,
+  };
+
+  const selectedTeamId = teamsData.find(team => team.name === selectedTeam)?.id || '';
+
+  const isLoading = isLoadingPlayers || isLoadingTeams || isLoadingDraftState || isLoadingKeepers;
+
+  return {
+    profile,
+    players,
+    teamsData,
+    currentPickIndex,
+    totalPicks,
+    completedPicks,
+    draftPicks,
+    isDraftComplete,
+    currentTeamId,
+    draftSettings,
+    isLoadingDraftState,
+    currentPick,
+    progress,
+    activeTeams,
+    connectionStatus,
+    selectedPlayer,
+    setSelectedPlayer,
+    selectedTeam,
+    setSelectedTeam,
+    isMakingPick,
+    setIsMakingPick,
+    activeTab,
+    setActiveTab,
+    draftView,
+    setDraftView,
+    isMobile,
+    navigate,
+    canMakePick,
+    handleSelectPlayer,
+    handleConfirmPick,
+    getDraftedPlayersForTeam,
+    draftStats,
+    selectedTeamId,
+    currentSeason,
+    isLoading,
+  };
+};

@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "github.com/supabase-community/supabase-mcp": {
+      "autoApprove": [
+        "create_branch",
+        "list_branches",
+        "delete_branch",
+        "merge_branch",
+        "reset_branch",
+        "rebase_branch",
+        "list_tables",
+        "list_extensions",
+        "list_migrations",
+        "apply_migration",
+        "execute_sql",
+        "get_logs",
+        "get_advisors",
+        "get_project_url",
+        "get_anon_key",
+        "generate_typescript_types",
+        "search_docs",
+        "list_edge_functions",
+        "deploy_edge_function"
+      ],
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=xruqdjonzxkzwsslzpdl"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_33a95635441729b588d554f9bb8f57495d4b868e"
+      }
+    }
+  }
+}
