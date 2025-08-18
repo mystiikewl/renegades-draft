@@ -23,6 +23,8 @@ const DraftHero: React.FC<DraftHeroProps> = ({
   currentPick,
   draftStats,
 }) => {
+  const isDraftComplete = draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks;
+
   return (
     <div className="relative h-auto min-h-[250px] md:min-h-[300px] bg-gradient-hero overflow-hidden">
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm animate-shimmer"></div>
@@ -47,16 +49,28 @@ const DraftHero: React.FC<DraftHeroProps> = ({
             </h1>
             <p className="text-primary-foreground/80 text-lg md:text-xl">Draft Central</p>
           </div>
-          <div className="flex flex-col items-center md:items-end space-y-3">
-            <div className="text-5xl md:text-7xl font-extrabold font-montserrat text-primary-glow animate-pulse bg-black/30 px-4 py-2 rounded-lg shadow-lg">
-              Pick #{currentPickIndex + 1}
-            </div>
-            {currentPick && (
-              <div className="text-primary-foreground text-xl md:text-2xl font-semibold text-shadow-md">
-                {currentPick.current_team.name} on the clock
+          
+          {isDraftComplete ? (
+            <div className="flex flex-col items-center md:items-end space-y-3">
+              <div className="text-4xl md:text-6xl font-extrabold font-montserrat text-green-400 bg-black/30 px-6 py-3 rounded-lg shadow-lg">
+                Draft Complete!
               </div>
-            )}
-          </div>
+              <div className="text-primary-foreground text-xl md:text-2xl font-semibold text-shadow-md">
+                All {draftStats.totalPicks} picks have been made
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center md:items-end space-y-3">
+              <div className="text-5xl md:text-7xl font-extrabold font-montserrat text-primary-glow animate-pulse bg-black/30 px-4 py-2 rounded-lg shadow-lg">
+                Pick #{currentPickIndex + 1}
+              </div>
+              {currentPick && (
+                <div className="text-primary-foreground text-xl md:text-2xl font-semibold text-shadow-md">
+                  {currentPick.current_team.name} on the clock
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

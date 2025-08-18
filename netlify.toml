@@ -1,0 +1,9 @@
+[build]
+  command = "cd renegades-draft-central && npm run build"
+  publish = "renegades-draft-central/dist"
+  base = "/"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

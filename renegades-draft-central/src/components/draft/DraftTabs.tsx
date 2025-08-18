@@ -48,6 +48,12 @@ interface DraftTabsProps {
   selectedTeamId: string;
   currentSeason: string;
   getDraftedPlayersForTeam: (teamName: string) => (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
+  draftStats: {
+    totalPicks: number;
+    completedPicks: number;
+    availablePlayers: number;
+    progress: number;
+  };
 }
 
 const DraftTabs: React.FC<DraftTabsProps> = ({
@@ -69,6 +75,7 @@ const DraftTabs: React.FC<DraftTabsProps> = ({
   selectedTeamId,
   currentSeason,
   getDraftedPlayersForTeam,
+  draftStats,
 }) => {
   const isMobile = useIsMobile();
   
@@ -103,7 +110,20 @@ const DraftTabs: React.FC<DraftTabsProps> = ({
             </SelectContent>
           </Select>
           
-          {activeTab === 'board' && canMakePick && (
+          {draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks ? (
+            <div className="p-4 bg-green-600/20 border border-green-600 rounded-lg">
+              <div className="flex flex-col items-center justify-between text-center">
+                <div className="mb-2">
+                  <h3 className="text-lg font-bold text-green-500 mb-1 font-montserrat">
+                    Draft Complete!
+                  </h3>
+                  <p className="text-primary-foreground/80">
+                    All {draftStats.totalPicks} picks have been made
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'board' && canMakePick && (
             <div className="p-4 bg-gradient-active border-draft-active animate-court-slide rounded-lg">
               <div className="flex flex-col items-center justify-between text-center">
                 <div className="mb-3">
@@ -136,7 +156,20 @@ const DraftTabs: React.FC<DraftTabsProps> = ({
             <TabsTrigger value="league-analysis" onClick={() => navigate('/league-analysis')}>League Analysis</TabsTrigger>
           </TabsList>
           
-          {activeTab === 'board' && canMakePick && (
+          {draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks ? (
+            <div className="p-6 bg-green-600/20 border border-green-600 rounded-lg">
+              <div className="flex flex-col md:flex-row items-center justify-between text-center md:text-left">
+                <div className="mb-4 md:mb-0">
+                  <h3 className="text-xl md:text-2xl font-bold text-green-500 mb-2 font-montserrat">
+                    Draft Complete!
+                  </h3>
+                  <p className="text-primary-foreground/80 text-lg">
+                    All {draftStats.totalPicks} picks have been made
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'board' && canMakePick && (
             <div className="p-6 bg-gradient-active border-draft-active animate-court-slide rounded-lg">
               <div className="flex flex-col md:flex-row items-center justify-between text-center md:text-left">
                 <div className="mb-4 md:mb-0">
@@ -203,6 +236,21 @@ const DraftTabs: React.FC<DraftTabsProps> = ({
               </ToggleGroup>
             )}
           </div>
+          
+          {draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks ? (
+            <div className="text-center py-12">
+              <div className="bg-card p-8 rounded-lg shadow-lg max-w-md mx-auto">
+                <h3 className="text-2xl font-bold text-green-500 mb-2">Draft Complete!</h3>
+                <p className="text-muted-foreground mb-4">
+                  All {draftStats.totalPicks} picks have been made. The fantasy draft is now complete.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  View the completed draft board below.
+                </p>
+              </div>
+            </div>
+          ) : null}
+          
           {draftView === 'board' ? (
             <DraftBoard
               picks={draftPicksFormatted}
@@ -230,17 +278,40 @@ const DraftTabs: React.FC<DraftTabsProps> = ({
               </Badge>
             )}
           </div>
-          <PlayerPool
-            players={players}
-            onSelectPlayer={onSelectPlayer}
-            selectedPlayer={selectedPlayer}
-            canMakePick={canMakePick}
-          />
+          
+          {draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks ? (
+            <div className="text-center py-12">
+              <div className="bg-card p-8 rounded-lg shadow-lg max-w-md mx-auto">
+                <h3 className="text-2xl font-bold text-green-500 mb-2">Draft Complete!</h3>
+                <p className="text-muted-foreground mb-4">
+                  All {draftStats.totalPicks} picks have been made. The fantasy draft is now complete.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  You can still view team rosters and analyze the draft results.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <PlayerPool
+              players={players}
+              onSelectPlayer={onSelectPlayer}
+              selectedPlayer={selectedPlayer}
+              canMakePick={canMakePick}
+            />
+          )}
         </div>
       </TabsContent>
 
       {/* Team Rosters Tab */}
       <TabsContent value="teams" className="space-y-6">
+        {draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks && (
+          <div className="text-center py-4">
+            <Badge variant="default" className="bg-green-600 text-white">
+              Draft Complete - All {draftStats.totalPicks} picks made
+            </Badge>
+          </div>
+        )}
+        
         <div className="grid gap-4 mb-6">
           <div className="flex overflow-x-auto pb-2 -mx-2 px-2">
             <ToggleGroup

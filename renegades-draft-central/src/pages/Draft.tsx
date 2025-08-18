@@ -139,6 +139,7 @@ export default function Draft() {
           selectedTeamId={selectedTeamId}
           currentSeason={currentSeason}
           getDraftedPlayersForTeam={getDraftedPlayersForTeam}
+          draftStats={draftStats}
         />
       </div>
     </div>
