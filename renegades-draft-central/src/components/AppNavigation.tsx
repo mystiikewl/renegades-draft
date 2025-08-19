@@ -18,6 +18,7 @@ const AppNavigation: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -38,6 +39,16 @@ const AppNavigation: React.FC = () => {
     { title: 'League Analysis', href: '/league-analysis' },
     { title: 'Teams', href: '/teams' },
   ];
+
+  const handleNavigation = (href: string) => {
+    navigate(href);
+    setIsSheetOpen(false); // Close the sheet after navigation
+  };
+
+  const handleSignOut = async () => {
+    setIsSheetOpen(false); // Close the sheet before signing out
+    await signOut();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -85,7 +96,7 @@ const AppNavigation: React.FC = () => {
         </NavigationMenu>
 
         {/* Mobile Navigation */}
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">
               <Menu className="h-6 w-6" />
@@ -95,21 +106,31 @@ const AppNavigation: React.FC = () => {
           <SheetContent side="right">
             <nav className="flex flex-col gap-4 py-6">
               {navLinks.map((link) => (
-                <Link key={link.href} to={link.href} className="text-lg font-medium">
+                <button 
+                  key={link.href} 
+                  onClick={() => handleNavigation(link.href)}
+                  className="text-lg font-medium text-left hover:underline"
+                >
                   {link.title}
-                </Link>
+                </button>
               ))}
               {profile?.is_admin && (
                 <>
-                  <Link to="/admin" className="text-lg font-medium">
+                  <button 
+                    onClick={() => handleNavigation('/admin')}
+                    className="text-lg font-medium text-left hover:underline"
+                  >
                     Admin Panel
-                  </Link>
-                  <Link to="/admin/teams" className="text-lg font-medium">
+                  </button>
+                  <button 
+                    onClick={() => handleNavigation('/admin/teams')}
+                    className="text-lg font-medium text-left hover:underline"
+                  >
                     Admin Team Management
-                  </Link>
+                  </button>
                 </>
               )}
-              <Button variant="ghost" onClick={signOut} className="justify-start pl-0 text-lg font-medium">
+              <Button variant="ghost" onClick={handleSignOut} className="justify-start pl-0 text-lg font-medium">
                 Sign Out
               </Button>
             </nav>
