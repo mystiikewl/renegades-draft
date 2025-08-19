@@ -64,6 +64,11 @@ export const fetchPlayers = async (filters?: PlayerFilters): Promise<PlayerWithK
     query = query.eq('is_available', true);
   }
 
+  // Apply team filter
+  if (filters?.teamId) {
+    query = query.eq('team_id', filters.teamId);
+  }
+
   const { data, error } = await query.order('points', { ascending: false });
 
   if (error) throw error;

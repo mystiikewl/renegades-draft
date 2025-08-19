@@ -8,16 +8,24 @@ interface UseTeamKeepersProps {
 }
 
 export const useTeamKeepers = ({ teamId, season }: UseTeamKeepersProps) => {
-  return useQuery<(Tables<'keepers'> & { player: Tables<'players'> })[]>({
+  return useQuery<Tables<'players'>[]>({
     queryKey: ['teamKeepers', teamId || 'all', season],
     queryFn: async () => {
-      const keepers = teamId ? await fetchKeepersByTeam(teamId) : await fetchKeepers();
-      return keepers
-        .filter(keeper => keeper.season === season && keeper.player)
-        .map(keeper => ({
-          ...keeper,
-          player: keeper.player as Tables<'players'>,
-        }));
+      if (teamId) {
+        // Existing logic for fetching keepers for a specific team
+        const keepers = await fetchKeepersByTeam(teamId);
+        return keepers
+          .filter(keeper => keeper.season === season)
+          .map(keeper => keeper.player as Tables<'players'>)
+          .filter(player => player !== null);
+      } else {
+        // Modified logic to always fetch all keepers regardless of user role
+        const keepers = await fetchKeepers();
+        return keepers
+          .filter(keeper => keeper.season === season)
+          .map(keeper => keeper.player as Tables<'players'>)
+          .filter(player => player !== null);
+      }
     },
     enabled: !!season,
   });

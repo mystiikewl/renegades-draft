@@ -17,7 +17,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeamKeepers } from '@/hooks/useTeamKeepers';
-import { TeamAnalytics } from '@/components/TeamAnalytics';
+import { KeeperImpactVisualization } from '@/components/KeeperImpactVisualization';
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { getCombinedPlayersForTeam, calculateTeamStats } from '@/utils/leagueAnalysis';
@@ -259,24 +259,24 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
                 </TableHeader>
                 <TableBody>
                   {keepers.map((keeper) => (
-                    <TableRow key={keeper.player.id}>
+                    <TableRow key={keeper.id}>
                       <TableCell className="font-medium">
                         <div>
-                          <div>{keeper.player.name}</div>
+                          <div>{keeper.name}</div>
                           {isMobile && (
                             <div className="text-xs text-muted-foreground">
-                              {keeper.player.position} - {keeper.player.nba_team}
+                              {keeper.position} - {keeper.nba_team}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.player.position}</TableCell>
-                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.player.nba_team}</TableCell>
+                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.position}</TableCell>
+                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.nba_team}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="destructive"
                           size={isMobile ? "sm" : "default"}
-                          onClick={() => removeKeeper(keeper.player.id)}
+                          onClick={() => removeKeeper(keeper.id)}
                         >
                           {isMobile ? "Remove" : "Remove Keeper"}
                         </Button>
@@ -290,8 +290,9 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
         </CardContent>
       </Card>
 
-      {/* Team Analytics */}
-      <TeamAnalytics 
+      {/* Keeper Impact Visualization */}
+      <KeeperImpactVisualization 
+        keepers={keepers} 
         teamStats={teamStats}
         leagueAverageStats={leagueAverageStats}
       />
