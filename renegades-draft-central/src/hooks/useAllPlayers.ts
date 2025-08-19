@@ -1,20 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { fetchAllPlayers, PlayerWithKeeperInfo } from '@/integrations/supabase/services/players';
 
-export type Player = Tables<'players'>;
+export type Player = PlayerWithKeeperInfo;
 
 export const useAllPlayers = () => {
   return useQuery<Player[]>({
     queryKey: ['allPlayers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchAllPlayers(),
   });
 };

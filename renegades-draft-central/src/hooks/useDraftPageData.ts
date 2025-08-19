@@ -2,21 +2,23 @@ import { useState, useEffect, useMemo } from 'react';
 import { usePlayers } from '@/hooks/usePlayers';
 import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import { useTeams } from '@/hooks/useTeams';
-import { useDraftState, DraftPickWithRelations, DraftSettings } from '@/hooks/useDraftState';
+import { useDraftState, DraftSettings } from '@/hooks/useDraftState';
 import { useTeamPresence, ConnectionStatus } from '@/hooks/useTeamPresence';
-import { useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import useTeamKeepers
-import { makeDraftPick } from '@/hooks/makeDraftPick'; // Import makeDraftPick
+import { useTeamKeepers } from '@/hooks/useTeamKeepers';
+import { makeDraftPick } from '@/hooks/makeDraftPick';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Database, Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import { fetchProfileByUserId, fetchProfileById } from '@/integrations/supabase/services/profiles';
+import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface DraftPageData {
   profile: Profile | null;
-  players: PlayerType[]; // Changed from playersData to players
+  players: PlayerType[];
   teamsData: { id: string; name: string }[];
   currentPickIndex: number;
   totalPicks: number;
@@ -92,17 +94,12 @@ export const useDraftPageData = (): DraftPageData => {
   useEffect(() => {
     const fetchProfile = async (session: { user?: { id: string } } | null) => {
       if (session?.user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (error) {
+        try {
+          const data = await fetchProfileByUserId(session.user.id);
+          setProfile(data);
+        } catch (error) {
           console.error('Error fetching profile:', error);
           setProfile(null);
-        } else {
-          setProfile(data);
         }
       } else {
         setProfile(null);
@@ -163,10 +160,8 @@ export const useDraftPageData = (): DraftPageData => {
 
   const handleSelectPlayer = (player: PlayerType) => {
     if (!canMakePick) return;
-    const fullPlayer = players.find(p => p.id === player.id); // Use 'players' instead of 'playersData'
+    const fullPlayer = players.find(p => p.id === player.id);
     setSelectedPlayer(fullPlayer || player);
-    // With the updated flow, we no longer need to open a dialog here
-    // The PlayerDetailsModal will handle the draft pick process directly
   };
 
   const handleConfirmPick = async () => {
@@ -174,25 +169,31 @@ export const useDraftPageData = (): DraftPageData => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('team_id, teams(name)')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        const userProfile = await fetchProfileByUserId(user.id);
+        
+        if (!userProfile?.team_id) {
+          toast({
+            title: "Error",
+            description: "You are not assigned to a team. Please contact the draft administrator.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      if (!userProfile?.team_id) {
+        if (currentPick.current_team_id !== userProfile.team_id) {
+          toast({
+            title: "Error",
+            description: `It's not your team's turn to pick. ${currentPick.current_team?.name} is on the clock.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
         toast({
           title: "Error",
-          description: "You are not assigned to a team. Please contact the draft administrator.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (currentPick.current_team_id !== userProfile.team_id) {
-        toast({
-          title: "Error",
-          description: `It's not your team's turn to pick. ${currentPick.current_team?.name} is on the clock.`,
+          description: "Failed to verify your team assignment. Please try again.",
           variant: "destructive",
         });
         return;
@@ -205,7 +206,6 @@ export const useDraftPageData = (): DraftPageData => {
       const result = await makeDraftPick(selectedPlayer.id);
 
       setSelectedPlayer(null);
-      // setShowPickDialog(false); // Removed as it's no longer needed
 
       toast({
         title: "Pick confirmed!",
@@ -248,9 +248,9 @@ export const useDraftPageData = (): DraftPageData => {
 
   const getDraftedPlayersForTeam = (teamName: string) => {
     return draftPicksFormatted
-      .filter(pick => pick.team === teamName && pick.player && !players.find(p => p.id === pick.player?.id)?.is_keeper) // Use 'players' instead of 'playersData'
+      .filter(pick => pick.team === teamName && pick.player && !players.find(p => p.id === pick.player?.id)?.is_keeper)
       .map(pick => {
-        const fullPlayer = players.find(p => p.id === pick.player?.id); // Use 'players' instead of 'playersData'
+        const fullPlayer = players.find(p => p.id === pick.player?.id);
         if (fullPlayer) {
           return {
             ...fullPlayer,
@@ -267,7 +267,7 @@ export const useDraftPageData = (): DraftPageData => {
   const draftStats = {
     totalPicks: totalPicks,
     completedPicks: completedPicks,
-    availablePlayers: players.filter(p => !p.is_drafted && !p.is_keeper).length, // Corrected property name
+    availablePlayers: players.filter(p => !p.is_drafted && !p.is_keeper).length,
     progress: progress,
   };
 

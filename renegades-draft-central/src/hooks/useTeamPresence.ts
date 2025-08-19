@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { fetchProfileByUserId } from '@/integrations/supabase/services/profiles';
+import { fetchTeamById } from '@/integrations/supabase/services/teams'; // Assuming this service exists or will be created
 
 export type TeamPresence = {
   teamId: string;
@@ -77,22 +79,23 @@ export const useTeamPresence = () => {
             setConnectionStatus('connected');
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('team_id, teams(name)')
-                .eq('user_id', user.id)
-                .single();
-              
-              if (!error && profile?.team_id) {
-                teamId = profile.team_id;
-                teamName = (profile as { teams?: { name: string } }).teams?.name || 'Your Team';
+              try {
+                const profile = await fetchProfileByUserId(user.id);
                 
-                channel!.track({
-                  teamId: teamId,
-                  teamName: teamName,
-                  userId: user.id,
-                  timestamp: Date.now(),
-                });
+                if (profile?.team_id) {
+                  teamId = profile.team_id;
+                  const team = await fetchTeamById(teamId);
+                  teamName = team?.name || 'Your Team';
+                  
+                  channel!.track({
+                    teamId: teamId,
+                    teamName: teamName,
+                    userId: user.id,
+                    timestamp: Date.now(),
+                  });
+                }
+              } catch (error) {
+                console.error('Error fetching profile or team:', error);
               }
             }
           } else if (status === 'CHANNEL_ERROR') {

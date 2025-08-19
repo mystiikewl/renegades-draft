@@ -50,13 +50,17 @@ export const DraftSettingsGeneral: React.FC = () => {
         roster_size: rosterSize,
         draft_type: draftType,
         pick_time_limit_seconds: pickTimeLimit,
+        // Don't include created_at or updated_at to avoid trigger issues
       };
 
       if (existingSettings) {
+        // For updates, we need to be careful about the updated_at field
         const { error } = await supabase
           .from('draft_settings')
           .update(newSettings)
-          .eq('id', existingSettings.id);
+          .eq('id', existingSettings.id)
+          .select();
+          
         if (error) throw error;
       } else {
         const { error } = await supabase

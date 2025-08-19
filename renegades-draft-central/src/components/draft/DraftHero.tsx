@@ -1,7 +1,7 @@
 import React from 'react';
 import { RealTimeStatus } from '@/components/RealTimeStatus';
 import { ConnectionStatus } from '@/hooks/useTeamPresence'; // Import ConnectionStatus type
-import { DraftPickWithRelations } from '@/hooks/useDraftState'; // Import the proper type
+import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks'; // Import the proper type
 
 interface DraftHeroProps {
   activeTeams: { teamId: string; teamName: string }[];

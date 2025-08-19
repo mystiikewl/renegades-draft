@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchKeepersByTeam, fetchKeepers } from '@/integrations/supabase/services/keepers';
 import { Tables } from '@/integrations/supabase/types';
 
 interface UseTeamKeepersProps {
@@ -13,29 +13,18 @@ export const useTeamKeepers = ({ teamId, season }: UseTeamKeepersProps) => {
     queryFn: async () => {
       if (teamId) {
         // Existing logic for fetching keepers for a specific team
-        const { data, error } = await supabase
-          .from('keepers')
-          .select('*, players(*)')
-          .eq('team_id', teamId)
-          .eq('season', season);
-
-        if (error) {
-          console.error('Error fetching team keepers:', error);
-          throw error;
-        }
-        return data.map(keeper => keeper.players as Tables<'players'>);
+        const keepers = await fetchKeepersByTeam(teamId);
+        return keepers
+          .filter(keeper => keeper.season === season)
+          .map(keeper => keeper.player as Tables<'players'>)
+          .filter(player => player !== null);
       } else {
         // Modified logic to always fetch all keepers regardless of user role
-        const { data, error } = await supabase
-          .from('keepers')
-          .select('*, players(*)')
-          .eq('season', season);
-
-        if (error) {
-          console.error('Error fetching all keepers:', error);
-          throw error;
-        }
-        return data.map(keeper => keeper.players as Tables<'players'>);
+        const keepers = await fetchKeepers();
+        return keepers
+          .filter(keeper => keeper.season === season)
+          .map(keeper => keeper.player as Tables<'players'>)
+          .filter(player => player !== null);
       }
     },
     enabled: !!season,

@@ -5,15 +5,11 @@ import { useTeams } from '@/hooks/useTeams';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 import { Team } from '@/types/team';
+import { fetchDraftSettings as fetchDraftSettingsService, DraftSettings as DraftSettingsDb } from '@/integrations/supabase/services/draftSettings';
+import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
 // Define types for draft settings from the database
 export type DraftSettingsDb = Tables<'draft_settings'>;
-
-export type DraftPickWithRelations = Tables<'draft_picks'> & {
-  player: Tables<'players'> | null;
-  original_team: Tables<'teams'>;
-  current_team: Tables<'teams'>;
-};
 
 export type DraftSettings = {
   roundCount: number;
@@ -51,30 +47,29 @@ export const useDraftState = () => {
   const { toast } = useToast();
 
   const fetchDraftSettings = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('draft_settings')
-      .select('*')
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
+    try {
+      const data = await fetchDraftSettingsService();
+      
+      if (data) {
+        return {
+          roundCount: data.roster_size,
+          teamCount: data.league_size,
+          season: data.season || '2025-26',
+          draftType: (data.draft_type as 'snake' | 'linear' | 'manual') || 'snake',
+          pickTimeLimitSeconds: data.pick_time_limit_seconds || 120,
+          draftOrder: (data.draft_order as string[]) || [],
+        };
+      }
+      return null;
+    } catch (error) {
       console.error('Error fetching draft settings:', error);
       toast({
         title: "Error",
-        description: `Failed to fetch draft settings: ${error.message}`,
+        description: `Failed to fetch draft settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
       return null;
-    } else if (data) {
-      return {
-        roundCount: data.roster_size,
-        teamCount: data.league_size,
-        season: data.season || '2025-26',
-        draftType: (data.draft_type as 'snake' | 'linear' | 'manual') || 'snake',
-        pickTimeLimitSeconds: data.pick_time_limit_seconds || 120,
-        draftOrder: (data.draft_order as string[]) || [],
-      };
     }
-    return null;
   }, [toast]);
 
   const mutateDraftSettings = useCallback(async () => {

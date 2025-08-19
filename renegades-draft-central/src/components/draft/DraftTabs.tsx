@@ -12,7 +12,7 @@ import { LayoutGrid, ListOrdered, ArrowRight } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { DraftPickWithRelations } from '@/hooks/useDraftState';
+import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Define the type for draftPicksFormatted
