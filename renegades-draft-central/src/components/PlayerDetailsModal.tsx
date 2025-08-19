@@ -242,7 +242,7 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                 
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Experience</span>
-                  <span className="font-medium">{player.experience || 'Rookie'}</span>
+                  <span className="font-medium">{player.experience === 'Rookie' ? 'Rookie' : 'NBA Player'}</span>
                 </div>
               </div>
             </div>
