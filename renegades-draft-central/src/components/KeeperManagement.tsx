@@ -17,7 +17,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeamKeepers } from '@/hooks/useTeamKeepers';
-import { KeeperImpactVisualization } from '@/components/KeeperImpactVisualization';
+import { TeamStrengthsWeaknesses } from '@/components/league-analysis/TeamStrengthsWeaknesses';
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { getCombinedPlayersForTeam, calculateTeamStats } from '@/utils/leagueAnalysis';
@@ -291,8 +291,8 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
       </Card>
 
       {/* Keeper Impact Visualization */}
-      <KeeperImpactVisualization 
-        keepers={keepers} 
+      <TeamStrengthsWeaknesses 
+        players={allPlayersForTeam} 
         teamStats={teamStats}
         leagueAverageStats={leagueAverageStats}
       />

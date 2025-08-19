@@ -2,8 +2,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
 export type PlayerWithKeeperInfo = Tables<'players'> & {
-  is_keeper: boolean;
-  keeper_team_id: string | null;
   is_rookie: boolean;
 };
 
@@ -23,7 +21,7 @@ export type PlayerFilters = {
 export const fetchPlayers = async (filters?: PlayerFilters): Promise<PlayerWithKeeperInfo[]> => {
   let query = supabase
     .from('players')
-    .select('*, is_keeper, keeper_team_id, is_rookie');
+    .select('*, is_rookie');
 
   // Apply position filter
   if (filters?.position && filters.position.length > 0) {
@@ -78,7 +76,7 @@ export const fetchPlayers = async (filters?: PlayerFilters): Promise<PlayerWithK
 export const fetchAllPlayers = async (): Promise<PlayerWithKeeperInfo[]> => {
   const { data, error } = await supabase
     .from('players')
-    .select('*, is_keeper, keeper_team_id, is_rookie')
+    .select('*, is_rookie')
     .order('points', { ascending: false });
 
   if (error) throw error;
@@ -88,7 +86,7 @@ export const fetchAllPlayers = async (): Promise<PlayerWithKeeperInfo[]> => {
 export const fetchPlayerById = async (id: string): Promise<PlayerWithKeeperInfo | null> => {
   const { data, error } = await supabase
     .from('players')
-    .select('*, is_keeper, keeper_team_id, is_rookie')
+    .select('*, is_rookie')
     .eq('id', id)
     .single();
 

@@ -57,6 +57,7 @@ export interface TeamStats {
   blocks: number;
   turnovers: number;
   three_pointers_made: number;
+  players: (Tables<'players'> | KeeperPlayer)[]; // Add players array
 }
 
 export const calculateTeamStats = (teamId: string, teamName: string, players: (Tables<'players'> | KeeperPlayer)[]): TeamStats => {
@@ -94,6 +95,7 @@ export const calculateTeamStats = (teamId: string, teamName: string, players: (T
     blocks: totalBlocks,
     turnovers: totalTurnovers,
     three_pointers_made: totalThreePointersMade,
+    players: players, // Include the players array
   };
 };
 

@@ -6,6 +6,7 @@ import { useLeagueAnalysisData } from '@/hooks/useLeagueAnalysisData';
 import PowerRankings from '@/components/league-analysis/PowerRankings';
 import { CategoricalRankings } from '@/components/league-analysis/CategoricalRankings';
 import Visualizations from '@/components/league-analysis/Visualizations';
+import { TeamStrengthsWeaknesses } from '@/components/league-analysis/TeamStrengthsWeaknesses';
 import { TopPerformers } from '@/components/league-analysis/TopPerformers';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -53,6 +54,7 @@ export default function LeagueAnalysis() {
     { value: 'categorical-rankings', label: 'Categorical Rankings' },
     { value: 'visualizations', label: 'Visualisations' },
     { value: 'top-performers', label: 'Top Performers' },
+    { value: 'team-strengths-weaknesses', label: 'Team Strengths & Weaknesses' },
   ];
 
   return (
@@ -94,15 +96,35 @@ export default function LeagueAnalysis() {
             {activeTab === 'top-performers' && (
               <TopPerformers />
             )}
+            {activeTab === 'team-strengths-weaknesses' && (
+              <TeamStrengthsWeaknesses
+                players={allTeamStats.find(t => t.teamId === selectedTeamForRadar)?.players || []}
+                teamStats={allTeamStats.find(t => t.teamId === selectedTeamForRadar)}
+                leagueAverageStats={allTeamStats.length > 0 ? {
+                  ...allTeamStats[0],
+                  totalFantasyScore: allTeamStats.reduce((sum, team) => sum + team.totalFantasyScore, 0) / allTeamStats.length,
+                  avgFantasyScore: allTeamStats.reduce((sum, team) => sum + team.avgFantasyScore, 0) / allTeamStats.length,
+                  points: allTeamStats.reduce((sum, team) => sum + team.points, 0) / allTeamStats.length,
+                  rebounds: allTeamStats.reduce((sum, team) => sum + team.rebounds, 0) / allTeamStats.length,
+                  assists: allTeamStats.reduce((sum, team) => sum + team.assists, 0) / allTeamStats.length,
+                  steals: allTeamStats.reduce((sum, team) => sum + team.steals, 0) / allTeamStats.length,
+                  blocks: allTeamStats.reduce((sum, team) => sum + team.blocks, 0) / allTeamStats.length,
+                  turnovers: allTeamStats.reduce((sum, team) => sum + team.turnovers, 0) / allTeamStats.length,
+                  three_pointers_made: allTeamStats.reduce((sum, team) => sum + team.three_pointers_made, 0) / allTeamStats.length,
+                  players: [], // This will be ignored as it's a calculated average, but required by interface
+                } : undefined}
+              />
+            )}
           </div>
         </div>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="power-rankings">Power Rankings</TabsTrigger>
             <TabsTrigger value="categorical-rankings">Categorical Rankings</TabsTrigger>
             <TabsTrigger value="visualizations">Visualisations</TabsTrigger>
             <TabsTrigger value="top-performers">Top Performers</TabsTrigger>
+            <TabsTrigger value="team-strengths-weaknesses">Team Strengths & Weaknesses</TabsTrigger>
           </TabsList>
 
           <TabsContent value="power-rankings">
@@ -126,6 +148,26 @@ export default function LeagueAnalysis() {
 
           <TabsContent value="top-performers">
             <TopPerformers />
+          </TabsContent>
+
+          <TabsContent value="team-strengths-weaknesses">
+            <TeamStrengthsWeaknesses
+              players={allTeamStats.find(t => t.teamId === selectedTeamForRadar)?.players || []}
+              teamStats={allTeamStats.find(t => t.teamId === selectedTeamForRadar)}
+              leagueAverageStats={allTeamStats.length > 0 ? {
+                ...allTeamStats[0],
+                totalFantasyScore: allTeamStats.reduce((sum, team) => sum + team.totalFantasyScore, 0) / allTeamStats.length,
+                avgFantasyScore: allTeamStats.reduce((sum, team) => sum + team.avgFantasyScore, 0) / allTeamStats.length,
+                points: allTeamStats.reduce((sum, team) => sum + team.points, 0) / allTeamStats.length,
+                rebounds: allTeamStats.reduce((sum, team) => sum + team.rebounds, 0) / allTeamStats.length,
+                assists: allTeamStats.reduce((sum, team) => sum + team.assists, 0) / allTeamStats.length,
+                steals: allTeamStats.reduce((sum, team) => sum + team.steals, 0) / allTeamStats.length,
+                blocks: allTeamStats.reduce((sum, team) => sum + team.blocks, 0) / allTeamStats.length,
+                turnovers: allTeamStats.reduce((sum, team) => sum + team.turnovers, 0) / allTeamStats.length,
+                three_pointers_made: allTeamStats.reduce((sum, team) => sum + team.three_pointers_made, 0) / allTeamStats.length,
+                players: [], // This will be ignored as it's a calculated average, but required by interface
+              } : undefined}
+            />
           </TabsContent>
         </Tabs>
       )}
