@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { usePlayers, Player as PlayerType } from '@/hooks/usePlayers';
+import { usePlayers } from '@/hooks/usePlayers';
+import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState, DraftPickWithRelations, DraftSettings } from '@/hooks/useDraftState';
 import { useTeamPresence, ConnectionStatus } from '@/hooks/useTeamPresence';
 import { useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import useTeamKeepers
+import { makeDraftPick } from '@/hooks/makeDraftPick'; // Import makeDraftPick
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Database, Tables } from '@/integrations/supabase/types';
@@ -203,7 +205,7 @@ export const useDraftPageData = (): DraftPageData => {
       const result = await makeDraftPick(selectedPlayer.id);
 
       setSelectedPlayer(null);
-      setShowPickDialog(false);
+      // setShowPickDialog(false); // Removed as it's no longer needed
 
       toast({
         title: "Pick confirmed!",

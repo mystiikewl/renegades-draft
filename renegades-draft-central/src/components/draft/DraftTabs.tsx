@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { DraftBoard } from '@/components/DraftBoard';
 import { DraftTimeline } from '@/components/DraftTimeline';
-import { PlayerPool, Player as PlayerType } from '@/components/PlayerPool';
+import { PlayerPool } from '@/components/PlayerPool';
+import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import { TeamRoster } from '@/components/TeamRoster';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LayoutGrid, ListOrdered, ArrowRight } from 'lucide-react';

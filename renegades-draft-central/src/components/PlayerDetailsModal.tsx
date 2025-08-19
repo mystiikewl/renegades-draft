@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { calculateFantasyScore } from '@/utils/fantasyScore';
-import type { Player } from '@/hooks/usePlayers';
+import type { Player } from './player-pool/PlayerCard';
 import { 
   Trophy, 
   Target, 

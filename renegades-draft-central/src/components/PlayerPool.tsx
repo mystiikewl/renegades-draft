@@ -1,55 +1,14 @@
 import React, { useState, useMemo, useEffect, memo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Search, 
-  User, 
-  Filter, 
-  ChevronDown, 
-  ChevronUp,
-  Trophy,
-  Target
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Tables } from '@/integrations/supabase/types';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { PlayerDetailsModal } from '@/components/PlayerDetailsModal';
+import type { Tables } from '@/integrations/supabase/types';
+import { PlayerCard } from './player-pool/PlayerCard';
+import { SearchBar } from './player-pool/SearchBar';
+import { FilterPanel } from './player-pool/FilterPanel';
+import { ResultsSummary } from './player-pool/ResultsSummary';
+import { NoResults } from './player-pool/NoResults';
 
 export type Player = Tables<'players'>;
-
-// Helper function to get display value and label based on sort option
-const getStatDisplay = (player: Player, sortOption: string) => {
-  switch (sortOption) {
-    case 'points':
-      return {
-        value: player.points?.toFixed(1) || '0.0',
-        label: 'PPG'
-      };
-    case 'rebounds':
-      return {
-        value: player.total_rebounds?.toFixed(1) || '0.0',
-        label: 'RPG'
-      };
-    case 'assists':
-      return {
-        value: player.assists?.toFixed(1) || '0.0',
-        label: 'APG'
-      };
-    case 'rank':
-      return {
-        value: player.rank?.toString() || 'N/A',
-        label: '#'
-      };
-    default: // Default to PPG
-      return {
-        value: player.points?.toFixed(1) || '0.0',
-        label: 'PPG'
-      };
-  }
-};
 
 interface PlayerPoolProps {
   players: Player[];
@@ -57,87 +16,6 @@ interface PlayerPoolProps {
   selectedPlayer?: Player | null;
   canMakePick?: boolean;
 }
-
-// Memoized Player Card component for better performance
-const PlayerCard = memo(({ 
-  player, 
-  isSelected, 
-  canMakePick, 
-  onClick,
-  sortOption
-}: { 
-  player: Player; 
-  isSelected: boolean; 
-  canMakePick: boolean | undefined; 
-  onClick: () => void; 
-  sortOption: string;
-}) => {
-  const isUnavailable = player.is_drafted || player.is_keeper;
-  const isClickable = canMakePick && !isUnavailable;
-  const statDisplay = getStatDisplay(player, sortOption);
-  
-  return (
-    <Card
-      key={player.id}
-      className={cn(
-        "p-4 transition-all duration-200 bg-gradient-card shadow-card relative",
-        isSelected && "ring-2 ring-primary bg-primary/5",
-        isClickable && "hover:bg-primary/5 cursor-pointer",
-        isUnavailable && "opacity-50 bg-muted/50 border-dashed border-muted cursor-not-allowed"
-      )}
-      onClick={isClickable ? onClick : undefined}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="font-semibold text-sm mb-1">{player.name}</div>
-          <div className="text-xs text-muted-foreground mb-2">{player.nba_team}</div>
-          <div className="flex items-center gap-1">
-            <Badge variant="secondary" className="text-xs">
-              {player.position}
-            </Badge>
-            {player.rank && (
-              <Badge variant="outline" className="text-xs">
-                #{player.rank}
-              </Badge>
-            )}
-            {player.is_rookie && (
-              <Badge variant="default" className="text-xs bg-blue-600 text-white">
-                Rookie
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end">
-          {isUnavailable && (
-            <Badge variant="default" className="text-xs mb-1 bg-gray-600 text-white">
-              {player.is_keeper ? "Keeper" : "Drafted"}
-            </Badge>
-          )}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Target className="h-3 w-3" />
-            {statDisplay.label === '#' ? `#${statDisplay.value}` : `${statDisplay.value} ${statDisplay.label}`}
-          </div>
-        </div>
-      </div>
-      {isClickable && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10 rounded-lg">
-          <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-            View Details
-          </span>
-        </div>
-      )}
-      {isUnavailable && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-gray-600/80 text-white text-xs px-2 py-1 rounded">
-            {player.is_keeper ? "Keeper" : "Drafted"}
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-});
-
-PlayerCard.displayName = 'PlayerCard';
 
 export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMakePick }: PlayerPoolProps) => {
   usePerformanceMonitoring('PlayerPool');
@@ -150,15 +28,10 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
   const [maxPoints, setMaxPoints] = useState('');
   const [minRebounds, setMinRebounds] = useState('');
   const [maxRebounds, setMaxRebounds] = useState('');
-  const [showRookies, setShowRookies] = useState(false); // New state for rookie filter
+  const [showRookies, setShowRookies] = useState(false);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayerForDetails, setSelectedPlayerForDetails] = useState<Player | null>(null);
 
-  const isMobile = useIsMobile();
-
-  // All available positions
-  const allPositions = ['PG', 'SG', 'SF', 'PF', 'C'];
-  
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -188,7 +61,7 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
     setMaxPoints('');
     setMinRebounds('');
     setMaxRebounds('');
-    setShowRookies(false); // Clear rookie filter
+    setShowRookies(false);
   };
   
   // Check if any filters are applied
@@ -199,12 +72,12 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
            maxPoints !== '' || 
            minRebounds !== '' || 
            maxRebounds !== '' ||
-           showRookies; // Include rookie filter in hasFilters check
+           showRookies;
   }, [debouncedSearchTerm, selectedPositions, minPoints, maxPoints, minRebounds, maxRebounds, showRookies]);
 
   // Filter and sort players
   const filteredAndSortedPlayers = useMemo(() => {
-    let result = players.filter(player => !player.is_drafted && !player.is_keeper); // Filter out drafted and keeper players first
+    let result = players.filter(player => !player.is_drafted && !player.is_keeper);
     
     // Apply search filter
     if (debouncedSearchTerm) {
@@ -286,179 +159,40 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
 
   return (
     <div className="space-y-4">
-      {/* Search and Main Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search players or teams..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-          {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
-      </div>
+      <SearchBar 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+      />
       
-      {/* Advanced Filters */}
       {showFilters && (
-        <Card className="p-4 space-y-4 bg-gradient-card shadow-card">
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold">Advanced Filters</h3>
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Clear All
-              </Button>
-            )}
-          </div>
-          
-          {/* Position Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Positions</label>
-            <div className="flex gap-2 flex-wrap">
-              {allPositions.map((position) => (
-                <Button
-                  key={position}
-                  variant={selectedPositions.includes(position) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => togglePosition(position)}
-                  className="min-w-[60px]"
-                >
-                  {position}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Rookie Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Player Type</label>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={showRookies ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowRookies(!showRookies)}
-                className="min-w-[60px]"
-              >
-                Rookies
-              </Button>
-            </div>
-          </div>
-          
-          {/* Stats Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Points Per Game</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Min"
-                  type="number"
-                  value={minPoints}
-                  onChange={(e) => setMinPoints(e.target.value)}
-                  className="w-full"
-                />
-                <Input
-                  placeholder="Max"
-                  type="number"
-                  value={maxPoints}
-                  onChange={(e) => setMaxPoints(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Rebounds Per Game</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Min"
-                  type="number"
-                  value={minRebounds}
-                  onChange={(e) => setMinRebounds(e.target.value)}
-                  className="w-full"
-                />
-                <Input
-                  placeholder="Max"
-                  type="number"
-                  value={maxRebounds}
-                  onChange={(e) => setMaxRebounds(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Sorting Options */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Sort By</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={sortOption === 'rank' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortOption('rank')}
-                className="flex items-center gap-1"
-              >
-                <Trophy className="h-3 w-3" />
-                Rank
-              </Button>
-              <Button
-                variant={sortOption === 'name' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortOption('name')}
-              >
-                Name
-              </Button>
-              <Button
-                variant={sortOption === 'points' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortOption('points')}
-              >
-                Points
-              </Button>
-              <Button
-                variant={sortOption === 'rebounds' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortOption('rebounds')}
-              >
-                Rebounds
-              </Button>
-              <Button
-                variant={sortOption === 'assists' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortOption('assists')}
-              >
-                Assists
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <FilterPanel
+          hasFilters={hasFilters}
+          clearFilters={clearFilters}
+          selectedPositions={selectedPositions}
+          togglePosition={togglePosition}
+          showRookies={showRookies}
+          setShowRookies={setShowRookies}
+          minPoints={minPoints}
+          maxPoints={maxPoints}
+          setMinPoints={setMinPoints}
+          setMaxPoints={setMaxPoints}
+          minRebounds={minRebounds}
+          maxRebounds={maxRebounds}
+          setMinRebounds={setMinRebounds}
+          setMaxRebounds={setMaxRebounds}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+        />
       )}
       
-      {/* Results Summary */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          {filteredAndSortedPlayers.length} player{filteredAndSortedPlayers.length !== 1 ? 's' : ''} found
-        </div>
-        {hasFilters && (
-          <div className="text-sm">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Filter className="h-3 w-3" />
-              Filters Active
-            </Badge>
-          </div>
-        )}
-      </div>
+      <ResultsSummary 
+        playerCount={filteredAndSortedPlayers.length}
+        hasFilters={hasFilters}
+      />
 
-      {/* Player Grid with Virtual Scrolling */}
+      {/* Player Grid */}
       <div className="max-h-[500px] overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredAndSortedPlayers.map((player) => (
@@ -475,15 +209,10 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
       </div>
 
       {filteredAndSortedPlayers.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No players found matching your criteria</p>
-          {hasFilters && (
-            <Button variant="link" onClick={clearFilters} className="mt-2">
-              Clear filters
-            </Button>
-          )}
-        </div>
+        <NoResults 
+          hasFilters={hasFilters}
+          clearFilters={clearFilters}
+        />
       )}
 
       {/* Player Details Modal */}

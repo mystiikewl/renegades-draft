@@ -4,7 +4,7 @@ import DraftHero from '@/components/draft/DraftHero';
 import DraftTabs from '@/components/draft/DraftTabs';
 import DraftStatsBar from '@/components/draft/DraftStatsBar'; // Import DraftStatsBar
 import { useDraftPageData } from '@/hooks/useDraftPageData';
-import { Player as PlayerType } from '@/hooks/usePlayers'; // Import PlayerType for local use
+import type { Player as PlayerType } from '@/components/player-pool/PlayerCard'; // Import PlayerType for local use
 
 export default function Draft() {
   const {
