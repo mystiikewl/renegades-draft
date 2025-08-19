@@ -79,7 +79,7 @@ export const useDraftPageData = (): DraftPageData => {
   const { activeTeams, connectionStatus } = useTeamPresence();
   const currentSeason = '2025-26';
   const { data: allKeepersRaw, isLoading: isLoadingKeepers } = useTeamKeepers({ teamId: '', season: currentSeason });
-  const allKeepers = useMemo(() => (allKeepersRaw || []) as Tables<'players'>[], [allKeepersRaw]);
+  const allKeepers = useMemo(() => allKeepersRaw || [], [allKeepersRaw]);
 
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerType | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -128,7 +128,7 @@ export const useDraftPageData = (): DraftPageData => {
   // Process players data to mark drafted and keeper players
   const players = useMemo(() => {
     const draftedPlayerIds = new Set(draftPicks.filter(pick => pick.player_id).map(pick => pick.player_id));
-    const keeperPlayerIds = new Set(allKeepers.map(keeper => keeper.id));
+    const keeperPlayerIds = new Set(allKeepers.map(keeper => keeper.player.id));
 
     return (playersDataRaw || []).map(player => ({
       ...player,
