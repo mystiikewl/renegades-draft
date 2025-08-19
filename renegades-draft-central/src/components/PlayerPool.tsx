@@ -20,6 +20,37 @@ import { PlayerDetailsModal } from '@/components/PlayerDetailsModal';
 
 export type Player = Tables<'players'>;
 
+// Helper function to get display value and label based on sort option
+const getStatDisplay = (player: Player, sortOption: string) => {
+  switch (sortOption) {
+    case 'points':
+      return {
+        value: player.points?.toFixed(1) || '0.0',
+        label: 'PPG'
+      };
+    case 'rebounds':
+      return {
+        value: player.total_rebounds?.toFixed(1) || '0.0',
+        label: 'RPG'
+      };
+    case 'assists':
+      return {
+        value: player.assists?.toFixed(1) || '0.0',
+        label: 'APG'
+      };
+    case 'rank':
+      return {
+        value: player.rank?.toString() || 'N/A',
+        label: '#'
+      };
+    default: // Default to PPG
+      return {
+        value: player.points?.toFixed(1) || '0.0',
+        label: 'PPG'
+      };
+  }
+};
+
 interface PlayerPoolProps {
   players: Player[];
   onSelectPlayer?: (player: Player) => void;
@@ -32,15 +63,18 @@ const PlayerCard = memo(({
   player, 
   isSelected, 
   canMakePick, 
-  onClick 
+  onClick,
+  sortOption
 }: { 
   player: Player; 
   isSelected: boolean; 
   canMakePick: boolean | undefined; 
   onClick: () => void; 
+  sortOption: string;
 }) => {
   const isUnavailable = player.is_drafted || player.is_keeper;
   const isClickable = canMakePick && !isUnavailable;
+  const statDisplay = getStatDisplay(player, sortOption);
   
   return (
     <Card
@@ -81,7 +115,7 @@ const PlayerCard = memo(({
           )}
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Target className="h-3 w-3" />
-            {player.points ? `${player.points.toFixed(1)} PPG` : '0.0 PPG'}
+            {statDisplay.label === '#' ? `#${statDisplay.value}` : `${statDisplay.value} ${statDisplay.label}`}
           </div>
         </div>
       </div>
@@ -434,6 +468,7 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
               isSelected={selectedPlayer?.id === player.id}
               canMakePick={canMakePick}
               onClick={() => handlePlayerCardClick(player)}
+              sortOption={sortOption}
             />
           ))}
         </div>
