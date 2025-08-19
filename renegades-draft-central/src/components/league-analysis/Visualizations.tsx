@@ -5,6 +5,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TeamStats } from '@/utils/leagueAnalysis';
 import { RadarChartDataItem } from '@/hooks/useLeagueAnalysisData';
 
+// Custom tooltip with better contrast
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-popover border border-border rounded-md p-3 shadow-lg">
+        <p className="font-medium text-foreground">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: <span className="font-medium">{entry.value.toLocaleString()}</span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 interface VisualizationsProps {
   sortedByFantasyScore: TeamStats[];
   selectedTeamForRadar: string;
@@ -29,12 +46,26 @@ const Visualizations: React.FC<VisualizationsProps> = ({
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={sortedByFantasyScore}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="teamName" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="totalFantasyScore" fill="#8884d8" name="Total Fantasy Score" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="teamName" 
+                stroke="hsl(var(--muted-foreground))" 
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))" 
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Bar 
+                dataKey="totalFantasyScore" 
+                fill="hsl(var(--primary))" 
+                name="Total Fantasy Score" 
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -59,13 +90,34 @@ const Visualizations: React.FC<VisualizationsProps> = ({
           {selectedTeamForRadar && radarChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart outerRadius={90} width={730} height={250} data={radarChartData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="subject" />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name={selectedTeamName} dataKey={selectedTeamName} stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                <Radar name="League Average" dataKey="League Average" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
-                <Legend />
-                <Tooltip />
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis 
+                  dataKey="subject" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <PolarRadiusAxis 
+                  angle={30} 
+                  domain={[0, 100]} 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <Radar 
+                  name={selectedTeamName} 
+                  dataKey={selectedTeamName} 
+                  stroke="hsl(var(--primary))" 
+                  fill="hsl(var(--primary))" 
+                  fillOpacity={0.6} 
+                />
+                <Radar 
+                  name="League Average" 
+                  dataKey="League Average" 
+                  stroke="hsl(var(--accent))" 
+                  fill="hsl(var(--accent))" 
+                  fillOpacity={0.6} 
+                />
+                <Legend 
+                  wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Tooltip content={<CustomTooltip />} />
               </RadarChart>
             </ResponsiveContainer>
           ) : (
