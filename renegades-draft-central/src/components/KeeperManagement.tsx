@@ -23,6 +23,8 @@ import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { getCombinedPlayersForTeam, calculateTeamStats } from '@/utils/leagueAnalysis';
 import { EnhancedSearchableSelect, EnhancedSearchableSelectOption } from '@/components/ui/searchable-select';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface KeeperManagementProps {
   teamId?: string;
@@ -41,6 +43,7 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
   const [maxKeepers, setMaxKeepers] = useState(9);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const loading = isLoadingPlayers || isLoadingKeepers;
 
@@ -225,23 +228,23 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 w-full">
+      <Card className="w-full">
         <CardHeader className="pb-6">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <CardTitle className="text-xl">Team Keepers</CardTitle>
-              <CardDescription>
+              <CardDescription className="mt-1">
                 Manage your team's keepers for the {season} season
               </CardDescription>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right flex-shrink-0">
               <div className="text-2xl font-bold text-primary">{keepers.length}/{maxKeepers}</div>
               <div className="text-sm text-muted-foreground">keepers selected</div>
             </div>
           </div>
           <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <span className="text-sm font-medium">Keeper Progress</span>
               <span className="text-sm text-muted-foreground">
                 {Math.round((keepers.length / maxKeepers) * 100)}%
@@ -261,25 +264,28 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-muted/50 rounded-lg p-4 border">
+        <CardContent className="space-y-6 overflow-hidden">
+          <div className="bg-muted/50 rounded-lg p-4 border w-full">
             <h3 className="font-semibold text-sm text-muted-foreground mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-primary rounded-full"></span>
               Add New Keeper
             </h3>
-            <div className="space-y-3">
-              <EnhancedSearchableSelect
-                options={playerOptions}
-                value={newKeeperPlayerId}
-                onValueChange={setNewKeeperPlayerId}
-                placeholder="Search players..."
-                disabled={loading || keepers.length >= maxKeepers}
-                emptyText="No available players found."
-              />
+            <div className="space-y-3 w-full">
+              <div className="w-full">
+                <EnhancedSearchableSelect
+                  options={playerOptions}
+                  value={newKeeperPlayerId}
+                  onValueChange={setNewKeeperPlayerId}
+                  placeholder="Search players..."
+                  disabled={loading || keepers.length >= maxKeepers}
+                  emptyText="No available players found."
+                />
+              </div>
               <Button
                 onClick={addKeeper}
                 disabled={loading || keepers.length >= maxKeepers || !newKeeperPlayerId}
                 className="w-full transition-all duration-200 hover:scale-105"
+                size={isMobile ? "lg" : "default"}
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
@@ -311,73 +317,125 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
               <p className="text-sm">Start building your team by adding keepers above</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm text-muted-foreground">
                   Current Keepers ({keepers.length})
                 </h3>
               </div>
-              <div className="overflow-x-auto border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-semibold">Player</TableHead>
-                      <TableHead className="hidden sm:table-cell font-semibold">Position</TableHead>
-                      <TableHead className="hidden md:table-cell font-semibold">Team</TableHead>
-                      <TableHead className="text-right font-semibold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {keepers.map((keeper) => (
-                    <TableRow key={keeper.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{keeper.player?.name}</div>
-                          <div className="sm:hidden text-xs text-muted-foreground">
-                            {keeper.player?.position} - {keeper.player?.nba_team}
+              <div className="w-full">
+                {isMobile ? (
+                  // Mobile card layout
+                  <div className="space-y-3">
+                    {keepers.map((keeper) => (
+                      <div key={keeper.id} className="bg-card border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-base">{keeper.player?.name}</div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {keeper.player?.position} • {keeper.player?.nba_team}
+                            </div>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">{keeper.player?.position}</TableCell>
-                      <TableCell className="hidden md:table-cell">{keeper.player?.nba_team}</TableCell>
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                            >
-                              Remove
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove Keeper</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to remove {keeper.player?.name} from your keepers?
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => removeKeeper(keeper.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        <div className="flex justify-end pt-2 border-t border-border/50">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="w-full sm:w-auto"
                               >
-                                Remove Keeper
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                                Remove
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="w-[90vw] max-w-[90vw]">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove Keeper</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove {keeper.player?.name} from your keepers?
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="gap-2">
+                                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => removeKeeper(keeper.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto"
+                                >
+                                  Remove Keeper
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Desktop table layout
+                  <div className="border rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30">
+                          <TableHead className="font-semibold">Player</TableHead>
+                          <TableHead className="hidden sm:table-cell font-semibold">Position</TableHead>
+                          <TableHead className="hidden md:table-cell font-semibold">Team</TableHead>
+                          <TableHead className="text-right font-semibold">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {keepers.map((keeper) => (
+                          <TableRow key={keeper.id}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <div>{keeper.player?.name}</div>
+                                <div className="sm:hidden text-xs text-muted-foreground">
+                                  {keeper.player?.position} - {keeper.player?.nba_team}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">{keeper.player?.position}</TableCell>
+                            <TableCell className="hidden md:table-cell">{keeper.player?.nba_team}</TableCell>
+                            <TableCell className="text-right">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                  >
+                                    Remove
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove Keeper</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to remove {keeper.player?.name} from your keepers?
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => removeKeeper(keeper.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Remove Keeper
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
+            )}
+          </CardContent>
       </Card>
 
       {/* Keeper Impact Visualization */}

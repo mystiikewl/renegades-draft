@@ -158,4 +158,65 @@ All colors MUST be HSL.
   .overflow-y-auto {
     overflow-y: auto;
   }
+
+  /* Mobile tab enhancements */
+  .mobile-tabs-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-tab-trigger {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+  }
+
+  .mobile-tab-trigger:hover {
+    background: hsl(var(--muted) / 0.8);
+  }
+
+  .mobile-tab-trigger[data-state="active"] {
+    background: hsl(var(--gradient-active));
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    color: hsl(var(--draft-active-foreground));
+    font-weight: 600;
+  }
+
+  /* Fix for "ON THE CLOCK" text contrast */
+  .on-the-clock-text {
+    color: hsl(var(--draft-active)) !important;
+    font-weight: 700;
+    text-shadow: 0 2px 4px hsl(0 0% 0% / 0.5);
+  }
+
+  /* Enhanced card borders that don't get cut off */
+  .card-grid {
+    border-collapse: separate;
+    border-spacing: 1px;
+  }
+
+  .card-grid .card {
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 1px);
+    background: hsl(var(--gradient-card));
+    background-size: 200% 200%;
+    transition: all 0.3s ease;
+  }
+
+  .card-grid .card:hover {
+    background-position: 100% 50%;
+    border-color: hsl(var(--primary));
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Improved tab container for mobile */
+  .mobile-tabs-container {
+    background: hsl(var(--muted) / 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
 }

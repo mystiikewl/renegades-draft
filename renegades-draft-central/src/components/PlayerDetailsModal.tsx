@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MobileTabs, MobileTabsContent, MobileTabsList, MobileTabsTrigger } from '@/components/ui/mobile-tabs';
 import { calculateFantasyScore } from '@/utils/fantasyScore';
 import type { Player } from './player-pool/PlayerCard';
 import { FantasyImpactSection } from './player-details/FantasyImpactSection';
@@ -13,6 +13,7 @@ import { EnhancedStatsSection } from './player-details/EnhancedStatsSection';
 import { useFantasyImpact } from '@/hooks/useFantasyImpact';
 import { useRankingImpact } from '@/hooks/useRankingImpact';
 import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
+import { useResponsive } from '@/hooks/use-responsive';
 import {
   Trophy,
   Target,
@@ -24,7 +25,6 @@ import {
   Activity,
   Zap
 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { makeDraftPick } from '@/hooks/makeDraftPick';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,8 +47,22 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isMakingPick, setIsMakingPick] = useState(false);
   const [activeTab, setActiveTab] = useState('stats');
-  const isMobile = useIsMobile();
+  const { isMobile, tabLayout } = useResponsive();
   const { toast } = useToast();
+
+  // Responsive tab label handler
+  const getTabLabel = (fullText: string, mobileText: string): string => {
+    switch (tabLayout) {
+      case 'icon-only':
+        return '';
+      case 'abbreviated':
+        return mobileText;
+      case 'full-text':
+      case 'grid-layout':
+      default:
+        return fullText;
+    }
+  };
 
   // Get user profile for team information
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
@@ -191,49 +205,49 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
           </DialogHeader>
 
           <div className="flex-grow overflow-y-auto py-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
-                <TabsTrigger value="stats" className="flex items-center gap-1">
+            <MobileTabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <MobileTabsList>
+                <MobileTabsTrigger value="stats" className="flex items-center gap-1" aria-label="Player Statistics">
                   <Activity className="h-4 w-4" />
-                  {!isMobile && 'Stats'}
-                </TabsTrigger>
-                <TabsTrigger value="fantasy" className="flex items-center gap-1">
+                  {getTabLabel('Stats', 'Stats')}
+                </MobileTabsTrigger>
+                <MobileTabsTrigger value="fantasy" className="flex items-center gap-1" aria-label="Fantasy Impact Analysis">
                   <Zap className="h-4 w-4" />
-                  {!isMobile && 'Fantasy Impact'}
-                </TabsTrigger>
-                <TabsTrigger value="rankings" className="flex items-center gap-1">
+                  {getTabLabel('Fantasy Impact', 'Fantasy')}
+                </MobileTabsTrigger>
+                <MobileTabsTrigger value="rankings" className="flex items-center gap-1" aria-label="Player Rankings">
                   <Trophy className="h-4 w-4" />
-                  {!isMobile && 'Rankings'}
-                </TabsTrigger>
-                <TabsTrigger value="analysis" className="flex items-center gap-1">
+                  {getTabLabel('Rankings', 'Rank')}
+                </MobileTabsTrigger>
+                <MobileTabsTrigger value="analysis" className="flex items-center gap-1" aria-label="Detailed Analysis">
                   <BarChart3 className="h-4 w-4" />
-                  {!isMobile && 'Analysis'}
-                </TabsTrigger>
-              </TabsList>
+                  {getTabLabel('Analysis', 'Analysis')}
+                </MobileTabsTrigger>
+              </MobileTabsList>
 
-              <TabsContent value="stats" className="space-y-6">
+              <MobileTabsContent value="stats" className="space-y-6">
                 <EnhancedStatsSection player={player} />
-              </TabsContent>
+              </MobileTabsContent>
 
-              <TabsContent value="fantasy" className="space-y-6">
+              <MobileTabsContent value="fantasy" className="space-y-6">
                 <FantasyImpactSection
                   fantasyImpact={fantasyImpact}
                   isLoading={isLoadingFantasyImpact}
                 />
-              </TabsContent>
+              </MobileTabsContent>
 
-              <TabsContent value="rankings" className="space-y-6">
+              <MobileTabsContent value="rankings" className="space-y-6">
                 <RankingImpactSection
                   rankingImpact={rankingImpact}
                   isLoading={isLoadingRankingImpact}
                 />
-              </TabsContent>
+              </MobileTabsContent>
 
-              <TabsContent value="analysis" className="space-y-6">
+              <MobileTabsContent value="analysis" className="space-y-6">
                 {/* Legacy detailed stats section for backward compatibility */}
                 <div className="space-y-4">
                   <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-lg'}`}>Detailed Statistics</h3>
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  <div className={`card-grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Target className="h-4 w-4 text-muted-foreground" />
@@ -287,7 +301,7 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                 {/* Player Info */}
                 <div className="space-y-4">
                   <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-lg'}`}>Player Information</h3>
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  <div className={`card-grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <span className="text-sm text-muted-foreground">Age</span>
                       <span className="font-medium">{player.age || 'N/A'}</span>
@@ -299,8 +313,8 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                     </div>
                   </div>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </MobileTabsContent>
+            </MobileTabs>
           </div>
 
           <DialogFooter className={`gap-2 ${isMobile ? 'flex-col' : 'sm:justify-between'}`}>
