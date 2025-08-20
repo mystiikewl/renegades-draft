@@ -19,6 +19,9 @@ interface MobileTableProps {
  * - Automatic layout switching based on screen size
  * - Custom breakpoint support
  * - Touch gesture integration
+ * - Consistent overflow handling for both layouts
+ * - Horizontal scroll indicators
+ * - Container constraints to prevent content spilling
  * - Performance optimizations
  * - Accessibility support
  */
@@ -44,7 +47,7 @@ export const MobileTable = React.memo(({
   return (
     <div
       className={cn(
-        'w-full',
+        'w-full max-w-full overflow-hidden',
         className
       )}
       data-layout={currentLayout}
@@ -54,20 +57,26 @@ export const MobileTable = React.memo(({
       {currentLayout === 'table' ? (
         <div
           className={cn(
-            'overflow-x-auto border rounded-lg',
+            'overflow-x-auto border rounded-lg max-w-full',
+            'scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
+            '[&::-webkit-scrollbar]:h-2',
             tableClassName
           )}
         >
-          {children}
+          <div className="min-w-full">
+            {children}
+          </div>
         </div>
       ) : (
         <div
           className={cn(
-            'space-y-3',
+            'space-y-3 max-w-full overflow-hidden',
             cardClassName
           )}
         >
-          {children}
+          <div className="w-full">
+            {children}
+          </div>
         </div>
       )}
     </div>

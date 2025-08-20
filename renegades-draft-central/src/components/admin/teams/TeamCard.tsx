@@ -119,66 +119,70 @@ export const TeamCard = React.memo(({
 
             {/* Action Buttons */}
             {showActions && (
-              <div className="flex gap-2 pt-2 border-t">
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleEdit}
-                    className={cn(
-                      'flex items-center gap-1',
-                      variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+              <div className="pt-2 border-t">
+                <div className="flex flex-wrap gap-2 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-2 min-w-0 flex-1">
+                    {onEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleEdit}
+                        className={cn(
+                          'flex items-center gap-1 flex-shrink-0',
+                          variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                        )}
+                      >
+                        <Edit className="h-3 w-3" />
+                        {variant === 'default' && 'Edit'}
+                      </Button>
                     )}
-                  >
-                    <Edit className="h-3 w-3" />
-                    {variant === 'default' && 'Edit'}
-                  </Button>
-                )}
 
-                {onManageRoster && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleManageRoster}
-                    className={cn(
-                      'flex items-center gap-1',
-                      variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                    {onManageRoster && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleManageRoster}
+                        className={cn(
+                          'flex items-center gap-1 flex-shrink-0',
+                          variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                        )}
+                      >
+                        <Users className="h-3 w-3" />
+                        {variant === 'default' && 'Roster'}
+                      </Button>
                     )}
-                  >
-                    <Users className="h-3 w-3" />
-                    {variant === 'default' && 'Roster'}
-                  </Button>
-                )}
 
-                {onManageKeepers && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleManageKeepers}
-                    className={cn(
-                      'flex items-center gap-1',
-                      variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                    {onManageKeepers && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleManageKeepers}
+                        className={cn(
+                          'flex items-center gap-1 flex-shrink-0',
+                          variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                        )}
+                      >
+                        <Shield className="h-3 w-3" />
+                        {variant === 'default' && 'Keepers'}
+                      </Button>
                     )}
-                  >
-                    <Shield className="h-3 w-3" />
-                    {variant === 'default' && 'Keepers'}
-                  </Button>
-                )}
+                  </div>
 
-                {onDelete && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={handleDelete}
-                    className={cn(
-                      'flex items-center gap-1 ml-auto',
-                      variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
-                    )}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    {variant === 'default' && 'Delete'}
-                  </Button>
-                )}
+                  {onDelete && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDelete}
+                      className={cn(
+                        'flex items-center gap-1 flex-shrink-0 ml-auto',
+                        variant === 'compact' ? 'h-7 px-2 text-xs' : 'h-8 px-3'
+                      )}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      {variant === 'default' && 'Delete'}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 

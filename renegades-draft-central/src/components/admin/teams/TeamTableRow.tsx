@@ -72,53 +72,55 @@ export const TeamTableRow = React.memo(({
       </TableCell>
 
       {showActions && (
-        <TableCell>
-          <div className="flex items-center gap-2">
-            {onEdit && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onEdit(team)}
-                className="h-8 px-2"
-                title="Edit team"
-              >
-                <Edit className="h-4 w-4" />
-                <span className="sr-only">Edit {team.name}</span>
-              </Button>
-            )}
+        <TableCell className="min-w-[200px]">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {onEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEdit(team)}
+                  className="h-8 px-2 flex-shrink-0"
+                  title="Edit team"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Edit {team.name}</span>
+                </Button>
+              )}
 
-            {onManageRoster && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onManageRoster(team)}
-                className="h-8 px-2"
-                title="Manage roster"
-              >
-                <Users className="h-4 w-4" />
-                <span className="sr-only">Manage roster for {team.name}</span>
-              </Button>
-            )}
+              {onManageRoster && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onManageRoster(team)}
+                  className="h-8 px-2 flex-shrink-0"
+                  title="Manage roster"
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="sr-only">Manage roster for {team.name}</span>
+                </Button>
+              )}
 
-            {onManageKeepers && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onManageKeepers(team)}
-                className="h-8 px-2"
-                title="Manage keepers"
-              >
-                <Shield className="h-4 w-4" />
-                <span className="sr-only">Manage keepers for {team.name}</span>
-              </Button>
-            )}
+              {onManageKeepers && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onManageKeepers(team)}
+                  className="h-8 px-2 flex-shrink-0"
+                  title="Manage keepers"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="sr-only">Manage keepers for {team.name}</span>
+                </Button>
+              )}
+            </div>
 
             {onDelete && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onDelete(team.id)}
-                className="h-8 px-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                className="h-8 px-2 text-destructive hover:text-destructive-foreground hover:bg-destructive flex-shrink-0 ml-auto"
                 title="Delete team"
               >
                 <Trash2 className="h-4 w-4" />

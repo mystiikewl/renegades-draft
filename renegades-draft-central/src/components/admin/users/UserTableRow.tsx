@@ -75,40 +75,42 @@ export const UserTableRow = React.memo(({
       </TableCell>
 
       {showActions && (
-        <TableCell>
-          <div className="flex items-center gap-2">
-            {onEdit && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onEdit(user)}
-                className="h-8 px-2"
-                title="Edit user"
-              >
-                <Edit className="h-4 w-4" />
-                <span className="sr-only">Edit {user.email}</span>
-              </Button>
-            )}
+        <TableCell className="min-w-[200px]">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {onEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEdit(user)}
+                  className="h-8 px-2 flex-shrink-0"
+                  title="Edit user"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Edit {user.email}</span>
+                </Button>
+              )}
 
-            {onRemoveFromTeam && user.team_id && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onRemoveFromTeam(user.id)}
-                className="h-8 px-2"
-                title="Remove from team"
-              >
-                <UserMinus className="h-4 w-4" />
-                <span className="sr-only">Remove {user.email} from team</span>
-              </Button>
-            )}
+              {onRemoveFromTeam && user.team_id && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onRemoveFromTeam(user.id)}
+                  className="h-8 px-2 flex-shrink-0"
+                  title="Remove from team"
+                >
+                  <UserMinus className="h-4 w-4" />
+                  <span className="sr-only">Remove {user.email} from team</span>
+                </Button>
+              )}
+            </div>
 
             {onDelete && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onDelete(user.id)}
-                className="h-8 px-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                className="h-8 px-2 text-destructive hover:text-destructive-foreground hover:bg-destructive flex-shrink-0 ml-auto"
                 title="Delete user"
               >
                 <Trash2 className="h-4 w-4" />
