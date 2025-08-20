@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/usePlayers';
 import { Tables } from '@/integrations/supabase/types';
@@ -21,7 +22,7 @@ import { TeamStrengthsWeaknesses } from '@/components/league-analysis/TeamStreng
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { getCombinedPlayersForTeam, calculateTeamStats } from '@/utils/leagueAnalysis';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select';
 
 interface KeeperManagementProps {
   teamId?: string;
@@ -40,17 +41,46 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
   const [maxKeepers, setMaxKeepers] = useState(9);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
 
   const loading = isLoadingPlayers || isLoadingKeepers;
 
+  // Transform available players for SearchableSelect - memoized for performance
+   const playerOptions: SearchableSelectOption[] = useMemo(() => {
+     return availablePlayers
+       .filter(
+         (player) =>
+           !keepers.some((keeper) => keeper.id === player.id)
+       )
+       .map((player) => {
+         const rank = player.rank ? `Rank #${player.rank}` : '';
+         return {
+           value: player.id,
+           label: `${player.name} (${player.position}) - ${player.nba_team}${rank ? ` • ${rank}` : ''}`,
+           searchText: `${player.name} ${player.position} ${player.nba_team} ${player.rank || ''} ${player.points || ''} ${player.total_rebounds || ''} ${player.assists || ''}`,
+         };
+       });
+   }, [availablePlayers, keepers]);
+
   // Get team stats for visualization
   const currentTeam = teamsData.find(t => t.id === currentTeamId);
+
+  // Transform keepers to match KeeperPlayer type expected by getCombinedPlayersForTeam - memoized
+   const keeperPlayers: (Tables<'keepers'> & { player: Tables<'players'> })[] = useMemo(() => {
+     return keepers.map(player => ({
+       id: '', // We don't have the keeper record ID, but it's not used in the function
+       player_id: player.id,
+       team_id: currentTeamId || '',
+       season: season,
+       created_at: new Date().toISOString(),
+       player: player
+     }));
+   }, [keepers, currentTeamId, season]);
+
   const allPlayersForTeam = currentTeamId ? getCombinedPlayersForTeam(
-    currentTeamId, 
-    season, 
-    draftPicks, 
-    keepers
+    currentTeamId,
+    season,
+    draftPicks,
+    keeperPlayers
   ) : [];
   
   const teamStats = currentTeam ? calculateTeamStats(currentTeam.id, currentTeam.name, allPlayersForTeam) : undefined;
@@ -58,10 +88,10 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
   // Calculate league average
   const leagueStats = teamsData.map(team => {
     const teamPlayers = getCombinedPlayersForTeam(
-      team.id, 
-      season, 
-      draftPicks, 
-      keepers
+      team.id,
+      season,
+      draftPicks,
+      keeperPlayers
     );
     return calculateTeamStats(team.id, team.name, teamPlayers);
   });
@@ -200,91 +230,154 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Team Keepers</CardTitle>
-          <CardDescription>
-            Manage your team's keepers for the {season} season ({keepers.length}/{maxKeepers})
-          </CardDescription>
+        <CardHeader className="pb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Team Keepers</CardTitle>
+              <CardDescription>
+                Manage your team's keepers for the {season} season
+              </CardDescription>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">{keepers.length}/{maxKeepers}</div>
+              <div className="text-sm text-muted-foreground">keepers selected</div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Keeper Progress</span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round((keepers.length / maxKeepers) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  keepers.length >= maxKeepers
+                    ? 'bg-green-500'
+                    : keepers.length >= maxKeepers * 0.8
+                    ? 'bg-yellow-500'
+                    : 'bg-blue-500'
+                }`}
+                style={{ width: `${Math.min((keepers.length / maxKeepers) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="space-y-2 w-full">
-              <Label htmlFor="keeper-player">Add Keeper</Label>
-              <div className="flex flex-col gap-2">
-                <select
-                  id="keeper-player"
-                  value={newKeeperPlayerId}
-                  onChange={(e) => setNewKeeperPlayerId(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">Select a player</option>
-                  {availablePlayers
-                    .filter(
-                      (player) =>
-                        !keepers.some((keeper) => keeper.id === player.id)
-                    )
-                    .map((player) => (
-                      <option key={player.id} value={player.id}>
-                        {player.name} ({player.position}) - {player.nba_team}
-                      </option>
-                    ))}
-                </select>
-                <Button 
-                  onClick={addKeeper} 
-                  disabled={loading || keepers.length >= maxKeepers}
-                  className="w-full sm:w-auto"
-                >
-                  Add Keeper
-                </Button>
-              </div>
+        <CardContent className="space-y-6">
+          <div className="bg-muted/50 rounded-lg p-4 border">
+            <h3 className="font-semibold text-sm text-muted-foreground mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-primary rounded-full"></span>
+              Add New Keeper
+            </h3>
+            <div className="space-y-3">
+              <SearchableSelect
+                options={playerOptions}
+                value={newKeeperPlayerId}
+                onValueChange={setNewKeeperPlayerId}
+                placeholder="Search players..."
+                disabled={loading || keepers.length >= maxKeepers}
+                emptyText="No available players found."
+              />
+              <Button
+                onClick={addKeeper}
+                disabled={loading || keepers.length >= maxKeepers || !newKeeperPlayerId}
+                className="w-full transition-all duration-200 hover:scale-105"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Adding...
+                  </div>
+                ) : (
+                  "Add Keeper"
+                )}
+              </Button>
+              {keepers.length >= maxKeepers && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <span className="w-4 h-4">⚠️</span>
+                  Maximum keepers reached
+                </p>
+              )}
             </div>
           </div>
 
           {loading ? (
-            <div className="text-center py-4">Loading keepers...</div>
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-muted-foreground">Loading keepers...</p>
+            </div>
           ) : keepers.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              No keepers set for this team
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 opacity-50">🏀</div>
+              <p className="text-lg font-medium">No keepers selected</p>
+              <p className="text-sm">Start building your team by adding keepers above</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Player</TableHead>
-                    <TableHead className={isMobile ? "hidden" : ""}>Position</TableHead>
-                    <TableHead className={isMobile ? "hidden" : ""}>Team</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-muted-foreground">
+                  Current Keepers ({keepers.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="font-semibold">Player</TableHead>
+                      <TableHead className="hidden sm:table-cell font-semibold">Position</TableHead>
+                      <TableHead className="hidden md:table-cell font-semibold">Team</TableHead>
+                      <TableHead className="text-right font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {keepers.map((keeper) => (
                     <TableRow key={keeper.id}>
                       <TableCell className="font-medium">
                         <div>
                           <div>{keeper.name}</div>
-                          {isMobile && (
-                            <div className="text-xs text-muted-foreground">
-                              {keeper.position} - {keeper.nba_team}
-                            </div>
-                          )}
+                          <div className="sm:hidden text-xs text-muted-foreground">
+                            {keeper.position} - {keeper.nba_team}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.position}</TableCell>
-                      <TableCell className={isMobile ? "hidden" : ""}>{keeper.nba_team}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{keeper.position}</TableCell>
+                      <TableCell className="hidden md:table-cell">{keeper.nba_team}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="destructive"
-                          size={isMobile ? "sm" : "default"}
-                          onClick={() => removeKeeper(keeper.id)}
-                        >
-                          {isMobile ? "Remove" : "Remove Keeper"}
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Remove
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Keeper</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to remove {keeper.name} from your keepers?
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => removeKeeper(keeper.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove Keeper
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
