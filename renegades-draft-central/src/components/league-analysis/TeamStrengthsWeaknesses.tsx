@@ -7,6 +7,14 @@ import { Tables } from '@/integrations/supabase/types';
 import { calculateFantasyScore } from '@/utils/fantasyScore';
 import { TeamStats } from '@/utils/leagueAnalysis';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useEffectiveFantasySettings } from '@/hooks/useFantasySettings';
+import {
+  calculateFantasyAnalysis,
+  FANTASY_CATEGORIES,
+  FantasyAnalysisResult
+} from '@/utils/fantasyAnalysis';
+import { FantasyMetricsCard } from '@/components/fantasy-analysis/FantasyMetricsCard';
 
 // Define a type for player positions
 type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
@@ -77,22 +85,42 @@ const getStrengthsAndWeaknesses = (teamStats: TeamStats, leagueAverageStats: Tea
   return { strengths, weaknesses };
 };
 
-export const TeamStrengthsWeaknesses = ({ 
-  players, 
+export const TeamStrengthsWeaknesses = ({
+  players,
   teamStats,
-  leagueAverageStats 
+  leagueAverageStats
 }: TeamStrengthsWeaknessesProps) => {
+  const isMobile = useIsMobile();
+  const { settings } = useEffectiveFantasySettings();
+
+  // Convert players to consistent format for fantasy analysis
+  const normalizedPlayers = players.map(p => 'player' in p ? p.player : p);
+
+  // Mock league averages - in production, this would come from league data
+  const leagueAverages = {
+    points: 15.5,
+    rebounds: 6.2,
+    assists: 4.8,
+    steals: 1.0,
+    blocks: 0.8,
+    three_pointers_made: 2.1,
+    turnovers: 2.2,
+  };
+
+  // Calculate comprehensive fantasy analysis
+  const analysis: FantasyAnalysisResult = calculateFantasyAnalysis(normalizedPlayers, leagueAverages, settings);
+  const { gaps, strengths, suggestions, benchmarks, overallScore, recommendations } = analysis;
+
+  const totalTeamScore = normalizedPlayers.reduce((sum, p) => sum + calculateFantasyScore(p), 0);
+  const averagePlayerScore = normalizedPlayers.length > 0 ? totalTeamScore / normalizedPlayers.length : 0;
+
+  // Legacy positional needs for backward compatibility
   const positionalNeeds = getPositionalNeeds(players);
-  const { strengths, weaknesses } = teamStats && leagueAverageStats 
-    ? getStrengthsAndWeaknesses(teamStats, leagueAverageStats) 
-    : { strengths: [], weaknesses: [] };
 
-  const totalTeamScore = players.reduce((sum, p) => {
-    const playerData = 'player' in p ? p.player : p;
-    return sum + calculateFantasyScore(playerData);
-  }, 0);
-
-  const averagePlayerScore = players.length > 0 ? totalTeamScore / players.length : 0;
+  // Use new fantasy analysis strengths/weaknesses
+  const fantasyStrengths = strengths;
+  const criticalGaps = gaps.filter(gap => gap.severity === 'critical');
+  const otherWeaknesses = gaps.filter(gap => gap.severity !== 'critical');
 
   return (
     <div className="space-y-6">
@@ -158,70 +186,77 @@ export const TeamStrengthsWeaknesses = ({
         </CardContent>
       </Card>
 
-      {/* Team Strengths & Weaknesses */}
-      {teamStats && leagueAverageStats && (
-        <Card className="bg-gradient-card shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              Strengths & Weaknesses
-            </CardTitle>
-            <CardDescription>
-              Key areas where your team excels or needs improvement compared to the league average.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {/* Fantasy Analysis - Strengths & Gaps */}
+      <Card className="bg-gradient-card shadow-card border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-500" />
+            Fantasy Analysis
+          </CardTitle>
+          <CardDescription>
+            Key fantasy areas where your team excels or needs improvement.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Strengths Section */}
+          <div>
+            <h4 className="text-lg font-semibold mb-2">Fantasy Strengths</h4>
+            {fantasyStrengths.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {fantasyStrengths.map((strength) => (
+                  <Badge key={strength} variant="default" className="text-sm bg-green-500 hover:bg-green-600">
+                    {strength}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No clear fantasy strengths identified yet.</p>
+            )}
+          </div>
+
+          {/* Critical Gaps Section */}
+          <div>
+            <h4 className="text-lg font-semibold mb-2">Critical Fantasy Gaps</h4>
+            {criticalGaps.length > 0 ? (
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                {criticalGaps.map((gap) => (
+                  <FantasyMetricsCard
+                    key={gap.category}
+                    category={gap.category}
+                    currentValue={gap.currentValue}
+                    targetValue={gap.targetValue}
+                    gap={gap}
+                    benchmarks={benchmarks[gap.category.toLowerCase().replace(/[^a-z0-9]/g, '')]}
+                    isMobile={isMobile}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No critical fantasy gaps detected!</p>
+            )}
+          </div>
+
+          {/* Other Gaps Section */}
+          {otherWeaknesses.length > 0 && (
             <div>
-              <h4 className="text-lg font-semibold mb-2">Strengths</h4>
-              {strengths.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {strengths.map(s => (
-                    <TooltipProvider key={s.key}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="default" className="text-sm bg-green-500 hover:bg-green-600">
-                            {s.icon} {s.name} (+{Math.abs(s.difference).toFixed(1)})
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Your team: {s.teamValue.toFixed(1)}</p>
-                          <p>League Avg: {s.leagueValue.toFixed(1)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No clear strengths identified yet.</p>
-              )}
+              <h4 className="text-lg font-semibold mb-2">Other Fantasy Gaps</h4>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                {otherWeaknesses.map((gap) => (
+                  <FantasyMetricsCard
+                    key={gap.category}
+                    category={gap.category}
+                    currentValue={gap.currentValue}
+                    targetValue={gap.targetValue}
+                    gap={gap}
+                    benchmarks={benchmarks[gap.category.toLowerCase().replace(/[^a-z0-9]/g, '')]}
+                    isMobile={isMobile}
+                  />
+                ))}
+              </div>
             </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-2">Weaknesses</h4>
-              {weaknesses.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {weaknesses.map(w => (
-                    <TooltipProvider key={w.key}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="destructive" className="text-sm">
-                            {w.icon} {w.name} ({w.isInverse ? '+' : ''}{Math.abs(w.difference).toFixed(1)})
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Your team: {w.teamValue.toFixed(1)}</p>
-                          <p>League Avg: {w.leagueValue.toFixed(1)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No clear weaknesses identified yet.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Positional Needs */}
       <Card className="bg-gradient-card shadow-card border-0">
@@ -269,8 +304,8 @@ export const TeamStrengthsWeaknesses = ({
                   {teamStats.totalFantasyScore > leagueAverageStats.totalFantasyScore ? 'above' : 'below'}
                 </span>{' '}
                 the league average in total fantasy score.
-                {strengths.length > 0 && ` You excel in ${strengths.map(s => s.name).join(', ')}.`}
-                {weaknesses.length > 0 && ` Consider targeting players who can improve your ${weaknesses.map(w => w.name).join(', ')} categories.`}
+                {fantasyStrengths.length > 0 && ` You excel in ${fantasyStrengths.join(', ')}.`}
+                {criticalGaps.length > 0 && ` Focus on addressing your critical gaps in ${criticalGaps.map(g => g.category).join(', ')}.`}
                 {positionalNeeds.length > 0 && ` You also have positional needs at ${positionalNeeds.join(', ')}.`}
               </>
             ) : (

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchKeepersByTeam, fetchKeepers, Keeper } from '@/integrations/supabase/services/keepers';
-import { Tables } from '@/integrations/supabase/types';
+import { transformKeeperData, validateKeeperData, debugKeeperData, KeeperPlayer } from '@/utils/playerDataUtils';
 
 interface UseTeamKeepersProps {
   teamId?: string; // Make teamId optional
@@ -8,17 +8,38 @@ interface UseTeamKeepersProps {
 }
 
 export const useTeamKeepers = ({ teamId, season }: UseTeamKeepersProps) => {
-  return useQuery<Keeper[]>({
+  return useQuery<KeeperPlayer[]>({
     queryKey: ['teamKeepers', teamId || 'all', season],
     queryFn: async () => {
-      if (teamId) {
-        // Existing logic for fetching keepers for a specific team
-        const keepers = await fetchKeepersByTeam(teamId);
-        return keepers.filter(keeper => keeper.season === season);
-      } else {
-        // Modified logic to always fetch all keepers regardless of user role
-        const keepers = await fetchKeepers();
-        return keepers.filter(keeper => keeper.season === season);
+      try {
+        let keepers: any[];
+
+        if (teamId) {
+          // Existing logic for fetching keepers for a specific team
+          keepers = await fetchKeepersByTeam(teamId);
+        } else {
+          // Modified logic to always fetch all keepers regardless of user role
+          keepers = await fetchKeepers();
+        }
+
+        // Filter by season
+        const seasonFilteredKeepers = keepers.filter(keeper => keeper.season === season);
+
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development') {
+          debugKeeperData(seasonFilteredKeepers, `useTeamKeepers ${teamId || 'all'}`);
+        }
+
+        // Transform and validate keeper data
+        const transformedKeepers = transformKeeperData(seasonFilteredKeepers);
+
+        // Filter out invalid keepers
+        const validKeepers = transformedKeepers.filter(validateKeeperData);
+
+        return validKeepers;
+      } catch (error) {
+        console.error('Error in useTeamKeepers:', error);
+        return [];
       }
     },
     enabled: !!season,

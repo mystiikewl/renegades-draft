@@ -8,7 +8,7 @@ import { Tables } from '@/integrations/supabase/types';
 
 export const TeamSwitcher = () => {
   const { data: teamsData = [], isLoading: isLoadingTeams } = useTeams();
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<string | undefined>(undefined);
   const { data: draftPicksData = [], isLoading: isLoadingDraftPicks } = useDraftPicks();
 
   useEffect(() => {

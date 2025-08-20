@@ -1,18 +1,81 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import {
+  PageContainer,
+  PageHeaderContainer,
+  MainContentContainer,
+  SectionContainer
+} from '@/components/layouts/PageContainer';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useDraftState } from '@/hooks/useDraftState';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Settings, ListOrdered, UserRound, Users, RefreshCw, BarChart3 } from 'lucide-react';
+import { Settings, ListOrdered, UserRound, Users, RefreshCw, BarChart3, Shield, Activity } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { usePullToRefresh } from '@/hooks/useTouchInteractions';
+
+// Loading skeleton component
+const DraftAdminLoadingSkeleton = () => {
+  const isMobile = useIsMobile();
+
+  return (
+    <div className="space-y-6">
+      {/* Header skeleton */}
+      <div className="text-center space-y-2">
+        <Skeleton className="h-8 w-64 mx-auto" />
+        <Skeleton className="h-6 w-48 mx-auto" />
+      </div>
+
+      {/* Status cards skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+
+      {/* Alert skeleton */}
+      <Skeleton className="h-24 w-full" />
+
+      {/* Configuration sections skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+
+      {/* Button skeleton */}
+      <div className="text-center">
+        <Skeleton className={cn(
+          "h-10 mx-auto",
+          isMobile ? "w-full" : "w-32"
+        )} />
+      </div>
+    </div>
+  );
+};
 
 const DraftAdmin: React.FC = () => {
   const { resetDraft, isDraftComplete, totalPicks, completedPicks, isLoadingDraftState } = useDraftState();
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
+  // Performance monitoring
+  usePerformanceMonitoring('DraftAdminPage');
+
+  // Pull to refresh functionality
+  usePullToRefresh(() => {
+    window.location.reload();
+  });
+
+  const handleRefresh = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   const handleResetDraft = useCallback(async () => {
     if (!confirm('Are you sure you want to reset the entire draft? This will remove all picks and mark all players as undrafted.')) {
@@ -30,23 +93,143 @@ const DraftAdmin: React.FC = () => {
 
   if (isLoadingDraftState) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-6 w-96" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
+      <>
+        {/* SEO Meta Tags */}
+        {(() => {
+          React.useEffect(() => {
+            document.title = 'Draft Admin | Renegades Draft';
+
+            // Add meta description
+            let metaDesc = document.querySelector('meta[name="description"]');
+            if (!metaDesc) {
+              metaDesc = document.createElement('meta');
+              metaDesc.setAttribute('name', 'description');
+              document.head.appendChild(metaDesc);
+            }
+            metaDesc.setAttribute('content', 'Manage draft settings, order, and operations for your fantasy basketball league.');
+
+            // Add viewport meta tag
+            let viewport = document.querySelector('meta[name="viewport"]');
+            if (!viewport) {
+              viewport = document.createElement('meta');
+              viewport.setAttribute('name', 'viewport');
+              document.head.appendChild(viewport);
+            }
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5');
+
+            return () => {
+              // Cleanup not needed since we're updating existing tags
+            };
+          }, []);
+          return null;
+        })()}
+
+        {/* Accessibility Skip Links */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-primary-foreground px-4 py-2 rounded-md z-50 transition-all duration-200 hover:bg-primary/90"
+        >
+          Skip to main content
+        </a>
+
+        <PageContainer maxWidth="7xl" padding="none">
+          <div className="min-h-screen bg-background">
+            <div className="text-center space-y-3 p-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Activity className="h-12 w-12 text-primary animate-pulse" />
+                <div>
+                  <h1 className="text-4xl font-bold text-primary">Draft Admin Dashboard</h1>
+                  <p className="text-xl text-muted-foreground">Loading draft data...</p>
+                </div>
+              </div>
+            </div>
+            <DraftAdminLoadingSkeleton />
+          </div>
+        </PageContainer>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Draft Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage all draft-related settings and operations.</p>
-        </div>
+    <>
+      {/* SEO Meta Tags */}
+      {(() => {
+        React.useEffect(() => {
+          document.title = 'Draft Admin | Renegades Draft';
+
+          // Add meta description
+          let metaDesc = document.querySelector('meta[name="description"]');
+          if (!metaDesc) {
+            metaDesc = document.createElement('meta');
+            metaDesc.setAttribute('name', 'description');
+            document.head.appendChild(metaDesc);
+          }
+          metaDesc.setAttribute('content', 'Manage draft settings, order, and operations for your fantasy basketball league.');
+
+          // Add viewport meta tag
+          let viewport = document.querySelector('meta[name="viewport"]');
+          if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.setAttribute('name', 'viewport');
+            document.head.appendChild(viewport);
+          }
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5');
+
+          return () => {
+            // Cleanup not needed since we're updating existing tags
+          };
+        }, []);
+        return null;
+      })()}
+
+      {/* Accessibility Skip Links */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-primary-foreground px-4 py-2 rounded-md z-50 transition-all duration-200 hover:bg-primary/90"
+      >
+        Skip to main content
+      </a>
+
+      <PageContainer maxWidth="7xl" padding="none">
+        <div className="min-h-screen bg-background">
+          {/* Mobile-specific header */}
+          {isMobile && (
+            <PageHeaderContainer sticky withBackdrop>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-6 w-6 text-primary" />
+                  <h1 className="text-xl font-bold">Draft Admin Dashboard</h1>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </PageHeaderContainer>
+          )}
+
+          {/* Main Content */}
+          <MainContentContainer
+            id="main-content"
+            withBottomPadding={isMobile}
+          >
+            <ErrorBoundary>
+              <Suspense fallback={<DraftAdminLoadingSkeleton />}>
+                <div className="space-y-8">
+                  {/* Header Section */}
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <Shield className="h-12 w-12 text-primary" />
+                      <div>
+                        <h1 className="text-4xl font-bold text-primary">Draft Admin Dashboard</h1>
+                        <p className="text-xl text-muted-foreground">Manage all draft-related settings and operations.</p>
+                      </div>
+                    </div>
+                  </div>
 
         <div className="space-y-6">
           {/* Draft Status Section */}
@@ -170,13 +353,27 @@ const DraftAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="text-center pt-4">
-          <Button onClick={() => window.location.href = '/admin'} variant="outline">
-            Back to Admin Dashboard
-          </Button>
+                  {/* Navigation Actions */}
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size={isMobile ? "lg" : "default"}
+                      className="w-full sm:w-auto"
+                    >
+                      <Link to="/admin" className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Back to Admin Dashboard
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </Suspense>
+            </ErrorBoundary>
+          </MainContentContainer>
         </div>
-      </div>
-    </div>
+      </PageContainer>
+    </>
   );
 };
 

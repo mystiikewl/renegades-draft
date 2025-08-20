@@ -1,79 +1,91 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { TeamManagement } from '@/components/TeamManagement';
-import { TeamSwitcher } from '@/components/TeamSwitcher';
-import { TeamAdminDashboard } from '@/components/admin/TeamAdminDashboard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
+import { DashboardHeader } from './team-dashboard/DashboardHeader';
+import { NavigationTabs } from './team-dashboard/NavigationTabs';
+import { DashboardContent } from './team-dashboard/DashboardContent';
+import { TeamAnalyticsPanel } from './team-dashboard/TeamAnalyticsPanel';
 
-export const TeamDashboard = () => {
+export const TeamDashboard = memo(() => {
   const { profile } = useAuth();
   const isAdmin = profile?.is_admin;
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('my-team');
 
-  const tabs = [
-    { value: 'my-team', label: 'My Team' },
-    { value: 'all-teams', label: 'All Teams' },
-    ...(isAdmin ? [{ value: 'admin', label: 'Admin' }] : [])
-  ];
+  // Enhanced state management
+  const [activeTab, setActiveTab] = useState('my-team');
+  const [viewMode, setViewMode] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Performance monitoring
+  usePerformanceMonitoring('TeamDashboard');
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Handle global keyboard shortcuts
+    if (event.key === 'd' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      setViewMode('dashboard');
+    } else if (event.key === 'a' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      setViewMode('analytics');
+    } else if (event.key === 'f' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      // Focus search input - this would need a ref to the search input
+      document.getElementById('dashboard-search')?.focus();
+    }
+  }, []);
+
+  // Add keyboard event listener
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 md:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-primary">Team Hub</h1>
-        <p className="text-muted-foreground">Manage your team and explore the league.</p>
+        {/* Enhanced Header with View Mode Toggle and Search */}
+        <DashboardHeader
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isMobile={isMobile}
+        />
 
-        {isMobile ? (
-          <div className="space-y-6">
-            <Select value={activeTab} onValueChange={setActiveTab}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select view" />
-              </SelectTrigger>
-              <SelectContent>
-                {tabs.map((tab) => (
-                  <SelectItem key={tab.value} value={tab.value}>
-                    {tab.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Enhanced Navigation */}
+        <NavigationTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isAdmin={isAdmin}
+          isMobile={isMobile}
+        />
 
-            <div>
-              {activeTab === 'my-team' && (
-                <TeamManagement />
-              )}
-              {activeTab === 'all-teams' && (
-                <TeamSwitcher />
-              )}
-              {activeTab === 'admin' && isAdmin && (
-                <TeamAdminDashboard />
-              )}
-            </div>
-          </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3">
-              <TabsTrigger value="my-team">My Team</TabsTrigger>
-              <TabsTrigger value="all-teams">All Teams</TabsTrigger>
-              {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
-            </TabsList>
+        {/* Main Content Area */}
+        <DashboardContent
+          activeTab={activeTab}
+          viewMode={viewMode}
+          searchQuery={debouncedSearchQuery}
+          isAdmin={isAdmin}
+          isMobile={isMobile}
+        />
 
-            <TabsContent value="my-team">
-              <TeamManagement />
-            </TabsContent>
-            <TabsContent value="all-teams">
-              <TeamSwitcher />
-            </TabsContent>
-            {isAdmin && (
-              <TabsContent value="admin">
-                <TeamAdminDashboard />
-              </TabsContent>
-            )}
-          </Tabs>
+        {/* Analytics Panel (shown when in analytics mode) */}
+        {viewMode === 'analytics' && (
+          <TeamAnalyticsPanel isMobile={isMobile} />
         )}
       </div>
     </div>
   );
-};
+});
