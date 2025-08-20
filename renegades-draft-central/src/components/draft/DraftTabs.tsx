@@ -62,10 +62,21 @@ interface DraftTabsProps {
 }
 
 export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
+  // Check URL hash for initial tab selection
+  const getInitialTab = () => {
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = DRAFT_TAB_CONFIG.tabs.map(tab => tab.value);
+    return validTabs.includes(hash) ? (hash as typeof DRAFT_TAB_CONFIG.tabs[number]['value']) : (props.activeTab as typeof DRAFT_TAB_CONFIG.tabs[number]['value']);
+  };
+
   // Enhanced state management with custom hooks
   const tabState = useDraftTabState({
-    initialTab: props.activeTab as typeof DRAFT_TAB_CONFIG.tabs[number]['value'],
-    onTabChange: props.setActiveTab
+    initialTab: getInitialTab(),
+    onTabChange: (tab) => {
+      props.setActiveTab(tab);
+      // Update URL hash for direct navigation
+      window.location.hash = tab;
+    }
   });
 
   // Real-time data management (background service)
@@ -103,6 +114,7 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
         canMakePick={props.canMakePick}
         isMobile={props.isMobile}
         navigate={props.navigate}
+        currentPickIndex={props.currentPickIndex}
       />
 
       {/* Connection status indicator */}

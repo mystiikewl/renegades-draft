@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useDraftStatus } from '@/hooks/useDraftStatus';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
+import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
+import { useToast } from '@/hooks/use-toast';
+import { formatPickNumber } from '@/utils/pickUtils';
 import type { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
 interface DraftStats {
@@ -18,14 +23,39 @@ interface OnClockBannerProps {
   canMakePick: boolean;
   isMobile: boolean;
   navigate?: (path: string) => void;
+  currentPickIndex: number;
 }
 
 export const OnClockBanner: React.FC<OnClockBannerProps> = ({
   currentPick,
   teams,
   isMobile,
-  navigate
+  navigate,
+  currentPickIndex
 }) => {
+  // Performance monitoring
+  usePerformanceMonitoring('OnClockBanner');
+
+  // Use mobile detection hook for better responsive behavior
+  const isMobileFromHook = useIsMobile();
+  const shouldUseMobile = isMobile || isMobileFromHook;
+
+  // Real-time updates and notifications
+  const { toast } = useToast();
+  const { invalidateQueries } = useRealTimeUpdates({
+    season: '2025-26',
+    onUpdate: () => {
+      console.log('OnClockBanner: Draft state updated');
+    }
+  });
+
+  // Show notification when current pick changes
+  useEffect(() => {
+    if (currentPick && currentPick.current_team) {
+      // Could add subtle notifications here if needed
+      console.log(`Current pick updated: ${currentPick.current_team.name} is on the clock`);
+    }
+  }, [currentPick?.id]);
   const { teamPalette } = useDraftStatus({
     draftStats: { totalPicks: 0, completedPicks: 0, availablePlayers: 0, progress: 0 },
     currentPick,
@@ -35,7 +65,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
 
   if (!currentPick || !teamPalette) return null;
 
-  if (isMobile) {
+  if (shouldUseMobile) {
     return (
       <div
         className="p-4 animate-court-slide rounded-lg border-2"
@@ -59,7 +89,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
               {currentPick.current_team.name} is on the clock!
             </h3>
             <p className="text-primary-foreground/80">
-              Pick #{currentPick.round * 100 + currentPick.pick_number} - Round {currentPick.round}, Pick {currentPick.pick_number}
+              Pick #{formatPickNumber(currentPickIndex)} - Round {currentPick.round}, Pick {currentPick.pick_number}
             </p>
           </div>
           <Button
@@ -71,7 +101,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
               color: teamPalette.text,
               borderColor: teamPalette.accent
             }}
-            onClick={() => navigate?.('/draft')}
+            onClick={() => navigate?.('/draft#players')}
           >
             Make Your Pick
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -111,7 +141,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
             {currentPick.current_team.name} is on the clock!
           </h3>
           <p className="text-primary-foreground/80 text-lg">
-            Pick #{currentPick.round * 100 + currentPick.pick_number} - Round {currentPick.round}, Pick {currentPick.pick_number}
+            Pick #{formatPickNumber(currentPickIndex)} - Round {currentPick.round}, Pick {currentPick.pick_number}
           </p>
         </div>
         <Button
@@ -123,7 +153,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
             color: teamPalette.text,
             borderColor: teamPalette.accent
           }}
-          onClick={() => navigate?.('/draft')}
+          onClick={() => navigate?.('/draft#players')}
         >
           Make Your Pick
           <ArrowRight className="h-5 w-5 ml-2" />

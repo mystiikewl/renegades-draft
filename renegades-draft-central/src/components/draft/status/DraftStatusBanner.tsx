@@ -18,6 +18,7 @@ interface DraftStatusBannerProps {
   canMakePick: boolean;
   isMobile: boolean;
   navigate?: (path: string) => void;
+  currentPickIndex: number;
 }
 
 export const DraftStatusBanner: React.FC<DraftStatusBannerProps> = (props) => {
