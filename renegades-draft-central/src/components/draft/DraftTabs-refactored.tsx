@@ -6,9 +6,6 @@ import { DraftBoardTab } from './tabs/DraftBoardTab';
 import { PlayerPoolTab } from './tabs/PlayerPoolTab';
 import { TeamRostersTab } from './tabs/TeamRostersTab';
 import { useDraftTabState } from '@/hooks/useDraftTabState';
-import { useDraftStatus } from '@/hooks/useDraftStatus';
-import { useRealTimeDraftTabs } from '@/hooks/useRealTimeDraftTabs';
-import { useDraftTabService } from '@/hooks/useDraftTabService';
 import { DRAFT_TAB_CONFIG } from '@/config/draftTabsConfig';
 import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import type { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
@@ -62,31 +59,15 @@ interface DraftTabsProps {
 }
 
 export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
-  // Enhanced state management with custom hooks
+  // Use custom hooks for state management
   const tabState = useDraftTabState({
     initialTab: props.activeTab as typeof DRAFT_TAB_CONFIG.tabs[number]['value'],
     onTabChange: props.setActiveTab
   });
 
-  // Real-time data management (background service)
-  const realtimeData = useRealTimeDraftTabs();
-
-  // Enhanced status logic with real-time data
-  const draftStatus = useDraftStatus({
-    draftStats: props.draftStats,
-    currentPick: props.currentPick,
-    teams: props.teams,
-    canMakePick: props.canMakePick
-  });
-
-  // Use prop data as primary source, enhanced with real-time status
-  const currentDraftPicks = props.draftPicksFormatted;
-  const currentPlayers = props.players;
-  const currentTeams = props.teams;
-
   return (
     <Tabs value={tabState.activeTab} onValueChange={tabState.setActiveTab}>
-      {/* Navigation Component with enhanced functionality */}
+      {/* Navigation Component */}
       <DraftTabNavigation
         tabs={DRAFT_TAB_CONFIG.tabs}
         activeTab={tabState.activeTab}
@@ -95,7 +76,7 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
         navigate={props.navigate}
       />
 
-      {/* Enhanced Status Banner with connection status */}
+      {/* Status Banner Component */}
       <DraftStatusBanner
         draftStats={props.draftStats}
         currentPick={props.currentPick}
@@ -105,42 +86,27 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
         navigate={props.navigate}
       />
 
-      {/* Connection status indicator */}
-      <div className="flex items-center justify-end mb-2">
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`w-2 h-2 rounded-full ${
-            realtimeData.connectionStatus === 'connected' ? 'bg-green-500' :
-            realtimeData.connectionStatus === 'connecting' ? 'bg-yellow-500' :
-            'bg-red-500'
-          }`} />
-          <span className="text-gray-600">
-            {realtimeData.connectionStatus}
-          </span>
-        </div>
-      </div>
-
-      {/* Tab Content Components with real-time enhancements */}
+      {/* Tab Content Components */}
       <TabsContent value="board">
         <DraftBoardTab
-          draftPicksFormatted={currentDraftPicks}
-          teams={currentTeams}
+          draftPicksFormatted={props.draftPicksFormatted}
+          teams={props.teams}
           currentPickIndex={props.currentPickIndex}
           draftView={props.draftView}
           onDraftViewChange={props.setDraftView}
           draftStats={props.draftStats}
           isMobile={props.isMobile}
-          connectionStatus={realtimeData.connectionStatus}
         />
       </TabsContent>
 
       <TabsContent value="players">
         <PlayerPoolTab
-          players={currentPlayers}
+          players={props.players}
           onSelectPlayer={props.onSelectPlayer}
           selectedPlayer={props.selectedPlayer}
           canMakePick={props.canMakePick}
           currentPick={props.currentPick}
-          teams={currentTeams}
+          teams={props.teams}
           draftStats={props.draftStats}
           isMobile={props.isMobile}
         />
@@ -148,7 +114,7 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
 
       <TabsContent value="teams">
         <TeamRostersTab
-          teams={currentTeams}
+          teams={props.teams}
           selectedTeam={props.selectedTeam}
           onSelectedTeamChange={props.setSelectedTeam}
           selectedTeamId={props.selectedTeamId}
@@ -159,28 +125,12 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
       </TabsContent>
 
       <TabsContent value="league-analysis">
-        {/* League Analysis with real-time status */}
+        {/* League Analysis content would go here */}
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold">League Analysis</h3>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                realtimeData.connectionStatus === 'connected' ? 'bg-green-500' :
-                realtimeData.connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`} />
-              <span className="text-sm text-gray-600">
-                {realtimeData.connectionStatus}
-              </span>
-            </div>
-          </div>
-          <p className="text-gray-600">
-            Live data updates enabled. {realtimeData.draftPicks.length} picks, {realtimeData.players.length} players, {realtimeData.teams.length} teams synced.
-          </p>
+          <h3 className="text-xl font-bold">League Analysis</h3>
+          <p>Navigate to league analysis page...</p>
         </div>
       </TabsContent>
     </Tabs>
   );
 };
-
-export default DraftTabs;

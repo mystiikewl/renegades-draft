@@ -2,6 +2,7 @@ import React from 'react';
 import { RealTimeStatus } from '@/components/RealTimeStatus';
 import { ConnectionStatus } from '@/hooks/useTeamPresence'; // Import ConnectionStatus type
 import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks'; // Import the proper type
+import { getTeamColorPalette } from '@/lib/teams'; // Import team color utilities
 
 interface DraftHeroProps {
   activeTeams: { teamId: string; teamName: string }[];
@@ -14,6 +15,7 @@ interface DraftHeroProps {
     availablePlayers: number;
     progress: number;
   };
+  teams: string[]; // Add teams array for color mapping
 }
 
 const DraftHero: React.FC<DraftHeroProps> = ({
@@ -22,11 +24,25 @@ const DraftHero: React.FC<DraftHeroProps> = ({
   currentPickIndex,
   currentPick,
   draftStats,
+  teams,
 }) => {
   const isDraftComplete = draftStats.totalPicks > 0 && draftStats.completedPicks >= draftStats.totalPicks;
 
+  // Get team colors for current team on the clock
+  const currentTeamName = currentPick?.current_team?.name;
+  const currentTeamPalette = currentTeamName ? getTeamColorPalette(currentTeamName, teams) : null;
+
   return (
-    <div className="relative h-auto min-h-[250px] md:min-h-[300px] bg-gradient-hero overflow-hidden">
+    <div
+      className="relative h-auto min-h-[250px] md:min-h-[300px] overflow-hidden transition-all duration-500"
+      style={{
+        background: currentTeamPalette
+          ? `linear-gradient(135deg, ${currentTeamPalette.primary}15, ${currentTeamPalette.secondary}10, hsl(var(--background)))`
+          : 'var(--gradient-hero)',
+        backgroundSize: '200% 200%',
+        animation: currentTeamPalette ? 'gradient-shift 4s ease infinite' : undefined
+      }}
+    >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm animate-shimmer"></div>
       <div className="relative z-10 text-primary-foreground py-6 px-4 md:px-6 lg:px-8 h-full flex flex-col">
         {/* Top Row: Buttons and Real-time Status */}
@@ -61,12 +77,34 @@ const DraftHero: React.FC<DraftHeroProps> = ({
             </div>
           ) : (
             <div className="flex flex-col items-center md:items-end space-y-3">
-              <div className="text-5xl md:text-7xl font-extrabold font-montserrat text-primary-glow animate-pulse bg-black/30 px-4 py-2 rounded-lg shadow-lg">
+              <div
+                className="text-5xl md:text-7xl font-extrabold font-montserrat animate-pulse px-4 py-2 rounded-lg shadow-lg"
+                style={{
+                  color: currentTeamPalette ? currentTeamPalette.primary : 'hsl(var(--primary-glow))',
+                  background: currentTeamPalette ? `${currentTeamPalette.background}80` : 'rgba(0, 0, 0, 0.3)',
+                  textShadow: currentTeamPalette ? `0 0 20px ${currentTeamPalette.accent}80` : undefined,
+                  animation: 'pulse-glow-team 2s ease-in-out infinite alternate'
+                }}
+              >
                 Pick #{currentPickIndex + 1}
               </div>
               {currentPick && (
-                <div className="text-primary-foreground text-xl md:text-2xl font-semibold text-shadow-md">
-                  {currentPick.current_team.name} on the clock
+                <div
+                  className="text-xl md:text-2xl font-semibold text-shadow-md"
+                  style={{
+                    color: currentTeamPalette ? currentTeamPalette.text : 'hsl(var(--primary-foreground))',
+                  }}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded-full animate-pulse"
+                      style={{
+                        backgroundColor: currentTeamPalette?.primary || 'hsl(var(--primary))',
+                        boxShadow: `0 0 10px ${currentTeamPalette?.accent || 'hsl(var(--primary-glow))'}`
+                      }}
+                    />
+                    {currentPick.current_team.name} on the clock
+                  </span>
                 </div>
               )}
             </div>

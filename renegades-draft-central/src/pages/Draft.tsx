@@ -114,9 +114,14 @@ export default function Draft() {
         currentPickIndex={currentPickIndex}
         currentPick={currentPick}
         draftStats={draftStats}
+        teams={teams}
       />
 
-      <DraftStatsBar draftStats={draftStats} /> {/* Render DraftStatsBar here */}
+      <DraftStatsBar
+        draftStats={draftStats}
+        teams={teams}
+        currentTeam={currentPick?.current_team?.name}
+      /> {/* Render DraftStatsBar here */}
 
       <div className="container mx-auto px-4 py-6 md:py-8">
         <DraftTabs
