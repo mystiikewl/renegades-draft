@@ -5,6 +5,7 @@ import { PositionFilter } from './PositionFilter';
 import { RookieFilter } from './RookieFilter';
 import { StatsFilter } from './StatsFilter';
 import { SortOptions } from './SortOptions';
+import { AvailabilityFilter } from './AvailabilityFilter';
 
 interface FilterPanelProps {
   hasFilters: boolean;
@@ -23,6 +24,13 @@ interface FilterPanelProps {
   setMaxRebounds: (value: string) => void;
   sortOption: string;
   setSortOption: (option: string) => void;
+  // New availability filter props
+  showAvailable: boolean;
+  showDrafted: boolean;
+  showKeepers: boolean;
+  setShowAvailable: (show: boolean) => void;
+  setShowDrafted: (show: boolean) => void;
+  setShowKeepers: (show: boolean) => void;
 }
 
 export const FilterPanel = ({
@@ -41,7 +49,14 @@ export const FilterPanel = ({
   setMinRebounds,
   setMaxRebounds,
   sortOption,
-  setSortOption
+  setSortOption,
+  // New availability filter props
+  showAvailable,
+  showDrafted,
+  showKeepers,
+  setShowAvailable,
+  setShowDrafted,
+  setShowKeepers
 }: FilterPanelProps) => {
   return (
     <Card className="p-4 space-y-4 bg-gradient-card shadow-card">
@@ -54,14 +69,23 @@ export const FilterPanel = ({
         )}
       </div>
       
-      <PositionFilter 
-        selectedPositions={selectedPositions} 
-        togglePosition={togglePosition} 
+      <AvailabilityFilter
+        showAvailable={showAvailable}
+        showDrafted={showDrafted}
+        showKeepers={showKeepers}
+        setShowAvailable={setShowAvailable}
+        setShowDrafted={setShowDrafted}
+        setShowKeepers={setShowKeepers}
       />
-      
-      <RookieFilter 
-        showRookies={showRookies} 
-        setShowRookies={setShowRookies} 
+
+      <PositionFilter
+        selectedPositions={selectedPositions}
+        togglePosition={togglePosition}
+      />
+
+      <RookieFilter
+        showRookies={showRookies}
+        setShowRookies={setShowRookies}
       />
       
       <StatsFilter

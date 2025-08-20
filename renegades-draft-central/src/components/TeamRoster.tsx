@@ -3,12 +3,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Trophy, Star, Download } from 'lucide-react';
-import { usePlayers } from '@/hooks/usePlayers';
+import { useDraftPageData } from '@/hooks/useDraftPageData';
+import { useTeamKeepers } from '@/hooks/useTeamKeepers';
 import { Tables } from '@/integrations/supabase/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeamRosterAnalysis } from './TeamRosterAnalysis';
 import { exportToCsv } from '@/utils/exportToCsv';
-import { useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import the new hook
 
 export type Player = Tables<'players'>;
 
@@ -19,11 +19,31 @@ interface TeamRosterProps {
 }
 
 export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
-  const { data: players = [], isLoading: isLoadingPlayers } = usePlayers(teamId);
-  const { data: keepers = [], isLoading: isLoadingKeepers } = useTeamKeepers({ teamId, season });
+  const {
+    players: allPlayers,
+    getDraftedPlayersForTeam,
+    isLoading: isLoadingDraftData
+  } = useDraftPageData();
 
-  const draftedPlayers = players.filter(player => player.is_drafted && player.drafted_by_team_id === teamId && !keepers.some(keeper => keeper.id === player.id));
-  const isLoading = isLoadingPlayers || isLoadingKeepers;
+  // Fetch team-specific keeper data
+  const { data: teamKeepers = [], isLoading: isLoadingKeepers } = useTeamKeepers({
+    teamId,
+    season
+  });
+
+  // Extract team-specific data using the consistent processing
+  const draftedPlayers = getDraftedPlayersForTeam(teamName);
+
+  // Transform keeper data to match player format and filter out null players
+  const keepers = teamKeepers
+    .filter(keeper => keeper.player) // Remove keepers with null players
+    .map(keeper => ({
+      ...keeper.player!,
+      is_keeper: true,
+      is_drafted: true // Keepers are considered drafted
+    }));
+
+  const isLoading = isLoadingDraftData || isLoadingKeepers;
 
   return (
     <Card className="p-4 md:p-6 bg-gradient-card shadow-card">
@@ -34,13 +54,13 @@ export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
         <div>
           <h3 className="text-xl font-bold">{teamName}</h3>
           <p className="text-sm text-muted-foreground">
-            {players.length} player{players.length !== 1 ? 's' : ''} on roster
+            {draftedPlayers.length + keepers.length} player{draftedPlayers.length + keepers.length !== 1 ? 's' : ''} on roster
           </p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => exportToCsv(`${teamName}_Roster_${season}.csv`, players)}
+          onClick={() => exportToCsv(`${teamName}_Roster_${season}.csv`, [...draftedPlayers, ...keepers])}
           className="ml-auto flex items-center gap-2"
         >
           <Download className="h-4 w-4" /> Export Roster
@@ -126,7 +146,7 @@ export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
       )}
 
       {/* Team Roster Analysis Section */}
-      <TeamRosterAnalysis players={players} />
+      <TeamRosterAnalysis players={[...draftedPlayers, ...keepers]} />
     </Card>
   );
 }

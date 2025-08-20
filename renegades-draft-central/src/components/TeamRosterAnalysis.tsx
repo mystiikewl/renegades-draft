@@ -2,25 +2,23 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tables } from '@/integrations/supabase/types';
-import { KeeperPlayer } from '@/hooks/useTeamKeepers';
 import { calculateFantasyScore } from '@/utils/fantasyScore'; // Will create this utility
 
 interface TeamRosterAnalysisProps {
-  players: (Tables<'players'> | KeeperPlayer)[];
+  players: Tables<'players'>[];
 }
 
 export function TeamRosterAnalysis({ players }: TeamRosterAnalysisProps) {
   // Group players by position
   const positionCounts = players.reduce((acc, player) => {
-    const position = 'player' in player ? player.player.position : player.position;
+    const position = player.position;
     acc[position] = (acc[position] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   // Calculate total and average fantasy score
   const totalFantasyScore = players.reduce((sum, player) => {
-    const playerData = 'player' in player ? player.player : player;
-    return sum + calculateFantasyScore(playerData);
+    return sum + calculateFantasyScore(player);
   }, 0);
 
   const averageFantasyScore = players.length > 0 ? totalFantasyScore / players.length : 0;

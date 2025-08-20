@@ -22,7 +22,7 @@ import { TeamStrengthsWeaknesses } from '@/components/league-analysis/TeamStreng
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { getCombinedPlayersForTeam, calculateTeamStats } from '@/utils/leagueAnalysis';
-import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select';
+import { EnhancedSearchableSelect, EnhancedSearchableSelectOption } from '@/components/ui/searchable-select';
 
 interface KeeperManagementProps {
   teamId?: string;
@@ -44,12 +44,12 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
 
   const loading = isLoadingPlayers || isLoadingKeepers;
 
-  // Transform available players for SearchableSelect - memoized for performance
-   const playerOptions: SearchableSelectOption[] = useMemo(() => {
+  // Transform available players for EnhancedSearchableSelect - memoized for performance
+   const playerOptions: EnhancedSearchableSelectOption[] = useMemo(() => {
      return availablePlayers
        .filter(
          (player) =>
-           !keepers.some((keeper) => keeper.id === player.id)
+           !keepers.some((keeper) => keeper.player?.id === player.id)
        )
        .map((player) => {
          const rank = player.rank ? `Rank #${player.rank}` : '';
@@ -57,6 +57,7 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
            value: player.id,
            label: `${player.name} (${player.position}) - ${player.nba_team}${rank ? ` • ${rank}` : ''}`,
            searchText: `${player.name} ${player.position} ${player.nba_team} ${player.rank || ''} ${player.points || ''} ${player.total_rebounds || ''} ${player.assists || ''}`,
+           player: player,
          };
        });
    }, [availablePlayers, keepers]);
@@ -66,15 +67,11 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
 
   // Transform keepers to match KeeperPlayer type expected by getCombinedPlayersForTeam - memoized
    const keeperPlayers: (Tables<'keepers'> & { player: Tables<'players'> })[] = useMemo(() => {
-     return keepers.map(player => ({
-       id: '', // We don't have the keeper record ID, but it's not used in the function
-       player_id: player.id,
-       team_id: currentTeamId || '',
-       season: season,
-       created_at: new Date().toISOString(),
-       player: player
+     return keepers.map(keeper => ({
+       ...keeper,
+       player: keeper.player!
      }));
-   }, [keepers, currentTeamId, season]);
+   }, [keepers]);
 
   const allPlayersForTeam = currentTeamId ? getCombinedPlayersForTeam(
     currentTeamId,
@@ -129,7 +126,7 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
     }
 
     // Check if player is already a keeper
-    if (keepers.some(keeper => keeper.id === newKeeperPlayerId)) {
+    if (keepers.some(keeper => keeper.player?.id === newKeeperPlayerId)) {
       toast({
         title: "Error",
         description: "This player is already a keeper",
@@ -271,7 +268,7 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
               Add New Keeper
             </h3>
             <div className="space-y-3">
-              <SearchableSelect
+              <EnhancedSearchableSelect
                 options={playerOptions}
                 value={newKeeperPlayerId}
                 onValueChange={setNewKeeperPlayerId}
@@ -335,14 +332,14 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
                     <TableRow key={keeper.id}>
                       <TableCell className="font-medium">
                         <div>
-                          <div>{keeper.name}</div>
+                          <div>{keeper.player?.name}</div>
                           <div className="sm:hidden text-xs text-muted-foreground">
-                            {keeper.position} - {keeper.nba_team}
+                            {keeper.player?.position} - {keeper.player?.nba_team}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">{keeper.position}</TableCell>
-                      <TableCell className="hidden md:table-cell">{keeper.nba_team}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{keeper.player?.position}</TableCell>
+                      <TableCell className="hidden md:table-cell">{keeper.player?.nba_team}</TableCell>
                       <TableCell className="text-right">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -357,7 +354,7 @@ export const KeeperManagement = ({ teamId: propTeamId, season = "2025-26", onKee
                             <AlertDialogHeader>
                               <AlertDialogTitle>Remove Keeper</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to remove {keeper.name} from your keepers?
+                                Are you sure you want to remove {keeper.player?.name} from your keepers?
                                 This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
