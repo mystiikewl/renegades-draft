@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTeams } from '@/hooks/useTeams';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAllProfiles } from '@/hooks/useAllProfiles';
 import { Tables } from '@/integrations/supabase/types';
 
 // Define types based on Supabase schema
 type Team = Tables<'teams'>;
-type Profile = Tables<'profiles'>;
 
 // Import new components
 import { TeamsTable } from '@/components/admin/teams/TeamsTable';
@@ -22,6 +22,7 @@ import { ConfirmDeleteUserDialog } from '@/components/admin/users/ConfirmDeleteU
 
 export const TeamAdminDashboard = () => {
   const { data: teamsData = [], isLoading: isLoadingTeams, refetch: refetchTeams } = useTeams();
+  const { data: allProfiles = [], isLoading: isLoadingProfiles, error: profilesError } = useAllProfiles();
   const { toast } = useToast();
   const { profile, isLoading: isLoadingAuth } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -35,34 +36,11 @@ export const TeamAdminDashboard = () => {
   const [currentViewingTeam, setCurrentViewingTeam] = useState<Team | null>(null);
 
   // User Management Dialog States
-  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
-  const [currentEditingUser, setCurrentEditingUser] = useState<Profile | null>(null);
+  const [currentEditingUser, setCurrentEditingUser] = useState<Tables<'profiles'> | null>(null);
   const [isConfirmDeleteUserDialogOpen, setIsConfirmDeleteUserDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
-
-  const fetchAllProfiles = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, team_id');
-    if (error) {
-      console.error('Error fetching profiles:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch user profiles.",
-        variant: "destructive"
-      });
-    } else {
-      setAllProfiles(data as Profile[]);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    if (profile && profile.is_admin) {
-      fetchAllProfiles();
-    }
-  }, [profile, fetchAllProfiles]);
+  const [userToDelete, setUserToDelete] = useState<Tables<'profiles'> | null>(null);
 
   // Team Action Handlers
   const handleCreateTeam = async (newTeamName: string, newTeamOwnerEmail: string) => {
@@ -152,7 +130,6 @@ export const TeamAdminDashboard = () => {
       toast({ title: "Error", description: `Failed to invite and assign user: ${data.error}`, variant: "destructive" });
     } else {
       toast({ title: "Success", description: `User ${newUserEmail} invited and assigned to team successfully` });
-      fetchAllProfiles();
       setIsAddUserDialogOpen(false);
     }
     setLoading(false);
@@ -168,13 +145,12 @@ export const TeamAdminDashboard = () => {
       toast({ title: "Error", description: `Failed to remove user from team: ${error.message}`, variant: "destructive" });
     } else {
       toast({ title: "Success", description: "User removed from team successfully" });
-      fetchAllProfiles();
       refetchTeams(); // Refetch teams to update owner_email in UI
     }
     setLoading(false);
   };
 
-  const handleEditUser = (user: Profile) => {
+  const handleEditUser = (user: Tables<'profiles'>) => {
     setCurrentEditingUser(user);
     setIsEditUserDialogOpen(true);
   };
@@ -194,14 +170,13 @@ export const TeamAdminDashboard = () => {
       toast({ title: "Error", description: `Failed to update user: ${error.message}`, variant: "destructive" });
     } else {
       toast({ title: "Success", description: `User ${editedUserEmail} updated successfully` });
-      fetchAllProfiles();
       setIsEditUserDialogOpen(false);
       setCurrentEditingUser(null);
     }
     setLoading(false);
   };
 
-  const confirmDeleteUser = (user: Profile) => {
+  const confirmDeleteUser = (user: Tables<'profiles'>) => {
     setUserToDelete(user);
     setIsConfirmDeleteUserDialogOpen(true);
   };
@@ -221,14 +196,13 @@ export const TeamAdminDashboard = () => {
       toast({ title: "Error", description: `Failed to delete user: ${error.message}`, variant: "destructive" });
     } else {
       toast({ title: "Success", description: `User ${userToDelete.email} deleted successfully` });
-      fetchAllProfiles();
       setIsConfirmDeleteUserDialogOpen(false);
       setUserToDelete(null);
     }
     setLoading(false);
   };
 
-  if (isLoadingAuth || isLoadingTeams) {
+  if (isLoadingAuth || isLoadingTeams || isLoadingProfiles) {
     return <div>Loading admin dashboard...</div>;
   }
 
@@ -287,20 +261,20 @@ export const TeamAdminDashboard = () => {
         isOpen={isAddUserDialogOpen}
         onOpenChange={setIsAddUserDialogOpen}
         teamsData={teamsData}
-        fetchAllProfiles={fetchAllProfiles}
+        fetchAllProfiles={() => {}} // Remove dependency on manual fetch
       />
       <EditUserDialog
         isOpen={isEditUserDialogOpen}
         onOpenChange={setIsEditUserDialogOpen}
         teamsData={teamsData}
-        fetchAllProfiles={fetchAllProfiles}
+        fetchAllProfiles={() => {}} // Remove dependency on manual fetch
         currentEditingUser={currentEditingUser}
       />
       <ConfirmDeleteUserDialog
         isOpen={isConfirmDeleteUserDialogOpen}
         onOpenChange={setIsConfirmDeleteUserDialogOpen}
         userToDelete={userToDelete}
-        fetchAllProfiles={fetchAllProfiles}
+        fetchAllProfiles={() => {}} // Remove dependency on manual fetch
       />
     </div>
   );

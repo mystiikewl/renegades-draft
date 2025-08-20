@@ -1,58 +1,92 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-export type Profile = Tables<'profiles'>;
-
-export const fetchProfiles = async (): Promise<Profile[]> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*');
-  
-  if (error) throw error;
-  return data as Profile[];
-};
-
-export const fetchProfileById = async (id: string): Promise<Profile | null> => {
+/**
+ * Fetch all profiles from the database
+ * @returns Promise<Tables<'profiles'>[]> Array of all profiles
+ */
+export const fetchProfiles = async (): Promise<Tables<'profiles'>[]> => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) throw error;
-  return data as Profile;
+    .order('email', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching profiles:', error);
+    throw new Error(`Failed to fetch profiles: ${error.message}`);
+  }
+
+  return data || [];
 };
 
-export const fetchProfileByUserId = async (userId: string): Promise<Profile | null> => {
+/**
+ * Fetch a single profile by user ID
+ * @param userId - The user ID to fetch profile for
+ * @returns Promise<Tables<'profiles'> | null> Profile data or null if not found
+ */
+export const fetchProfileByUserId = async (userId: string): Promise<Tables<'profiles'> | null> => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('user_id', userId)
     .single();
-  
-  if (error) throw error;
-  return data as Profile;
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No rows returned - profile doesn't exist
+      return null;
+    }
+    console.error('Error fetching profile by user ID:', error);
+    throw new Error(`Failed to fetch profile: ${error.message}`);
+  }
+
+  return data;
 };
 
-export const updateProfile = async (id: string, updates: Partial<Profile>) => {
+/**
+ * Fetch a single profile by ID
+ * @param profileId - The profile ID to fetch
+ * @returns Promise<Tables<'profiles'> | null> Profile data or null if not found
+ */
+export const fetchProfileById = async (profileId: string): Promise<Tables<'profiles'> | null> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Error fetching profile by ID:', error);
+    throw new Error(`Failed to fetch profile: ${error.message}`);
+  }
+
+  return data;
+};
+
+/**
+ * Update a profile
+ * @param profileId - The profile ID to update
+ * @param updates - Partial profile data to update
+ * @returns Promise<Tables<'profiles'>> Updated profile data
+ */
+export const updateProfile = async (
+  profileId: string,
+  updates: Partial<Tables<'profiles'>>
+): Promise<Tables<'profiles'>> => {
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
-    .eq('id', id)
+    .eq('id', profileId)
     .select()
     .single();
-  
-  if (error) throw error;
-  return data as Profile;
-};
 
-export const createProfile = async (profile: Omit<Profile, 'id'>) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .insert(profile)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as Profile;
+  if (error) {
+    console.error('Error updating profile:', error);
+    throw new Error(`Failed to update profile: ${error.message}`);
+  }
+
+  return data;
 };
