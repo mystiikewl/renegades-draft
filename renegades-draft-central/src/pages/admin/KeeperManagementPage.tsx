@@ -12,7 +12,7 @@ import { Users, Calendar } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const KeeperManagementPage: React.FC = () => {
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(undefined);
   const [currentSeason, setCurrentSeason] = useState<string>('2025-26');
   const { data: teamsData = [], isLoading: isLoadingTeams } = useTeams();
 

@@ -9,6 +9,7 @@ import { Tables } from '@/integrations/supabase/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeamRosterAnalysis } from './TeamRosterAnalysis';
 import { exportToCsv } from '@/utils/exportToCsv';
+import { getCombinedPlayersForTeam as getUnifiedPlayers } from '@/utils/playerDataUtils';
 
 export type Player = Tables<'players'>;
 
@@ -22,6 +23,7 @@ export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
   const {
     players: allPlayers,
     getDraftedPlayersForTeam,
+    draftPicks,
     isLoading: isLoadingDraftData
   } = useDraftPageData();
 
@@ -42,6 +44,9 @@ export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
       is_keeper: true,
       is_drafted: true // Keepers are considered drafted
     }));
+
+  // Get unified player data for analysis
+  const unifiedPlayers = getUnifiedPlayers(draftedPlayers, keepers);
 
   const isLoading = isLoadingDraftData || isLoadingKeepers;
 
@@ -146,7 +151,7 @@ export function TeamRoster({ teamName, teamId, season }: TeamRosterProps) {
       )}
 
       {/* Team Roster Analysis Section */}
-      <TeamRosterAnalysis players={[...draftedPlayers, ...keepers]} />
+      <TeamRosterAnalysis players={unifiedPlayers} />
     </Card>
   );
 }

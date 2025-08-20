@@ -1,5 +1,6 @@
 import { Tables } from '@/integrations/supabase/types';
 import { calculateFantasyScore } from '@/utils/fantasyScore';
+import { getCombinedPlayersForTeam as getCombinedPlayers, transformDraftedPlayerData, transformKeeperData } from '@/utils/playerDataUtils';
 
 type KeeperPlayer = Tables<'keepers'> & { player: Tables<'players'> };
 
@@ -10,37 +11,48 @@ export const getCombinedPlayersForTeam = (
   draftPicks: (Tables<'draft_picks'> & { player: Tables<'players'> | null; original_team: Tables<'teams'>; current_team: Tables<'teams'>; })[],
   keepersData: KeeperPlayer[]
 ) => {
-  const teamDraftPicks = draftPicks.filter(pick => pick.current_team_id === teamId && pick.player);
+  try {
+    const teamDraftPicks = draftPicks.filter(pick => pick.current_team_id === teamId && pick.player);
 
-  const mappedDraftedPlayers = teamDraftPicks.map(pick => ({
-    ...pick.player!,
-    round: pick.round,
-    pick: pick.pick_number,
-    overallPick: draftPicks.findIndex(dp => dp.id === pick.id) + 1,
-    nbaTeam: pick.player!.nba_team,
-  })) as (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
+    const mappedDraftedPlayers = teamDraftPicks.map(pick => ({
+      ...pick.player!,
+      round: pick.round,
+      pick: pick.pick_number,
+      overallPick: draftPicks.findIndex(dp => dp.id === pick.id) + 1,
+      nbaTeam: pick.player!.nba_team,
+    })) as (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
 
-  // For keepers, we need to check if the player object has a team_id property
-  // The keepersData might be structured differently depending on how it's fetched
-  const teamKeepers = keepersData.filter(k => {
-    // If k has a team_id property, use that
-    if ('team_id' in k) {
-      return k.team_id === teamId;
-    }
-    // If k is a player object with a keeper_team_id property, use that
-    if ('keeper_team_id' in k) {
-      return k.keeper_team_id === teamId;
-    }
-    // If neither, we can't filter by team
-    return false;
-  });
+    // Filter keepers by team and transform to consistent structure
+    const teamKeepers = keepersData.filter(keeper => {
+      if ('team_id' in keeper) {
+        return keeper.team_id === teamId;
+      }
+      return false;
+    });
 
-  const allPlayers: (Tables<'players'> | KeeperPlayer)[] = [
-    ...teamKeepers,
-    ...mappedDraftedPlayers,
-  ];
-  
-  return allPlayers;
+    // Transform keepers data to ensure consistency
+    const transformedKeepers = transformKeeperData(teamKeepers);
+
+    const allPlayers: (Tables<'players'> | KeeperPlayer)[] = [
+      ...transformedKeepers,
+      ...mappedDraftedPlayers,
+    ];
+
+    return allPlayers;
+  } catch (error) {
+    console.error('Error in getCombinedPlayersForTeam:', error);
+    // Fallback: return only drafted players if there's an error
+    const teamDraftPicks = draftPicks.filter(pick => pick.current_team_id === teamId && pick.player);
+    const mappedDraftedPlayers = teamDraftPicks.map(pick => ({
+      ...pick.player!,
+      round: pick.round,
+      pick: pick.pick_number,
+      overallPick: draftPicks.findIndex(dp => dp.id === pick.id) + 1,
+      nbaTeam: pick.player!.nba_team,
+    })) as (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
+
+    return mappedDraftedPlayers;
+  }
 };
 
 // Helper to calculate team stats

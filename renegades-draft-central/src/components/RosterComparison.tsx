@@ -5,8 +5,10 @@ import { TeamRosterAnalysis } from './TeamRosterAnalysis';
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState } from '@/hooks/useDraftState';
 import { Tables } from '@/integrations/supabase/types';
-import { KeeperPlayer, useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import useTeamKeepers
+import { useTeamKeepers } from '@/hooks/useTeamKeepers'; // Import useTeamKeepers
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCombinedPlayersForTeam as getUnifiedPlayers } from '@/utils/playerDataUtils';
+import { KeeperPlayer } from '@/utils/playerDataUtils';
 
 interface RosterComparisonProps {
   currentSeason: string;
@@ -16,15 +18,15 @@ export function RosterComparison({ currentSeason }: RosterComparisonProps) {
   const { data: teamsData = [], isLoading: isLoadingTeams } = useTeams();
   const { draftPicks, isLoadingDraftState } = useDraftState();
 
-  const [team1Id, setTeam1Id] = useState<string>('');
-  const [team2Id, setTeam2Id] = useState<string>('');
+  const [team1Id, setTeam1Id] = useState<string | undefined>(undefined);
+  const [team2Id, setTeam2Id] = useState<string | undefined>(undefined);
 
   // Fetch keepers for both teams at the component level
-  const { data: team1Keepers = [], isLoading: isLoadingTeam1Keepers } = useTeamKeepers(team1Id, currentSeason);
-  const { data: team2Keepers = [], isLoading: isLoadingTeam2Keepers } = useTeamKeepers(team2Id, currentSeason);
+  const { data: team1Keepers = [], isLoading: isLoadingTeam1Keepers } = useTeamKeepers({ teamId: team1Id, season: currentSeason });
+  const { data: team2Keepers = [], isLoading: isLoadingTeam2Keepers } = useTeamKeepers({ teamId: team2Id, season: currentSeason });
 
   // Helper function to get combined players (drafted and keepers) for a specific team
-  const getCombinedPlayersForTeam = (teamId: string, keepers: (Tables<'players'> | KeeperPlayer)[]) => {
+  const getCombinedPlayersForTeam = (teamId: string, keepers: KeeperPlayer[]) => {
     const team = teamsData.find(t => t.id === teamId);
     if (!team) return [];
 
@@ -40,9 +42,19 @@ export function RosterComparison({ currentSeason }: RosterComparisonProps) {
       nbaTeam: pick.player!.nba_team,
     })) as (Tables<'players'> & { round: number; pick: number; overallPick: number; nbaTeam: string; })[];
 
-    // Combine drafted players and keepers
-    const allPlayers: (Tables<'players'> | KeeperPlayer)[] = [
-      ...keepers,
+    // Transform keepers to player format for consistency
+    const transformedKeepers = keepers
+      .filter(keeper => keeper.player)
+      .map(keeper => ({
+        ...keeper.player!,
+        is_keeper: true,
+        is_drafted: true,
+        drafted_by_team_id: keeper.team_id
+      }));
+
+    // Combine drafted players and transformed keepers
+    const allPlayers: Tables<'players'>[] = [
+      ...transformedKeepers,
       ...mappedDraftedPlayers,
     ];
 

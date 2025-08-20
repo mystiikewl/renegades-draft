@@ -24,7 +24,7 @@ interface UserTeamActionsProps {
 export const UserTeamActions = ({ teamsData, refetchTeams, userTeam }: UserTeamActionsProps) => {
   const { user } = useAuth();
   const [newTeamName, setNewTeamName] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -92,7 +92,7 @@ export const UserTeamActions = ({ teamsData, refetchTeams, userTeam }: UserTeamA
     setLoading(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ team_id: Number(selectedTeam) })
+      .update({ team_id: selectedTeam ? Number(selectedTeam) : null })
       .eq('user_id', user.id);
 
     if (error) {
