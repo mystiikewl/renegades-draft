@@ -55,6 +55,10 @@ interface LeagueAnalysisData {
   draftPicks: (Tables<'draft_picks'> & { player: Tables<'players'> | null; original_team: Tables<'teams'>; current_team: Tables<'teams'>; })[];
   allKeepers: KeeperPlayer[];
   currentSeason: string;
+  // New data for enhanced visualizations
+  draftEfficiencyData: any[];
+  positionalBalanceData: any[];
+  fantasyGapsData: any[];
 }
 
 export const useLeagueAnalysisData = (): LeagueAnalysisData => {
@@ -134,5 +138,8 @@ export const useLeagueAnalysisData = (): LeagueAnalysisData => {
     draftPicks,
     allKeepers,
     currentSeason,
+    draftEfficiencyData: [], // Will be calculated in component
+    positionalBalanceData: [], // Will be calculated in component
+    fantasyGapsData: [], // Will be calculated in component
   };
 };

@@ -91,6 +91,9 @@ export default function LeagueAnalysis() {
                 radarChartData={radarChartData}
                 teamsData={teamsData}
                 selectedTeamName={selectedTeamName}
+                draftPicks={draftPicks}
+                allKeepers={allKeepers}
+                currentSeason={currentSeason}
               />
             )}
             {activeTab === 'top-performers' && (
@@ -143,6 +146,9 @@ export default function LeagueAnalysis() {
               radarChartData={radarChartData}
               teamsData={teamsData}
               selectedTeamName={selectedTeamName}
+              draftPicks={draftPicks}
+              allKeepers={allKeepers}
+              currentSeason={currentSeason}
             />
           </TabsContent>
 

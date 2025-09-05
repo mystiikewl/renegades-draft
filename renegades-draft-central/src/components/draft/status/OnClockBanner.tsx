@@ -82,7 +82,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
             <h3
               className="text-lg font-bold mb-1 font-montserrat"
               style={{
-                color: teamPalette.text,
+                color: '#FFFFFF',
                 textShadow: `0 0 10px ${teamPalette.accent}60`
               }}
             >
@@ -127,7 +127,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
           <h3
             className="text-xl md:text-2xl font-bold mb-2 font-montserrat flex items-center gap-2"
             style={{
-              color: teamPalette.text,
+              color: '#FFFFFF',
               textShadow: `0 0 10px ${teamPalette.accent}60`
             }}
           >

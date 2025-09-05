@@ -117,35 +117,47 @@ export default function Draft() {
         teams={teams}
       />
 
-      <DraftStatsBar
-        draftStats={draftStats}
-        teams={teams}
-        currentTeam={currentPick?.current_team?.name}
-      /> {/* Render DraftStatsBar here */}
+      {/* Enhanced spacing and visual separation */}
+      <div className="relative">
+        {/* Subtle section divider */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
 
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <DraftTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isMobile={isMobile}
-          navigate={navigate}
-          canMakePick={canMakePick}
-          currentPick={currentPick}
-          players={players}
-          onSelectPlayer={handleSelectPlayer}
-          selectedPlayer={selectedPlayer}
-          draftPicksFormatted={draftPicksFormatted}
-          teams={teams}
-          currentPickIndex={currentPickIndex}
-          draftView={draftView}
-          setDraftView={setDraftView}
-          selectedTeam={selectedTeam}
-          setSelectedTeam={setSelectedTeam}
-          selectedTeamId={selectedTeamId}
-          currentSeason={currentSeason}
-          getDraftedPlayersForTeam={getDraftedPlayersForTeam}
+        <DraftStatsBar
           draftStats={draftStats}
+          teams={teams}
+          currentTeam={currentPick?.current_team?.name}
         />
+
+        {/* Bottom section divider */}
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+      </div>
+
+      {/* Improved container spacing and layout */}
+      <div className="container mx-auto px-4 py-8 md:py-12 lg:px-6 xl:px-8">
+        <div className="space-y-8">
+          <DraftTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isMobile={isMobile}
+            navigate={navigate}
+            canMakePick={canMakePick}
+            currentPick={currentPick}
+            players={players}
+            onSelectPlayer={handleSelectPlayer}
+            selectedPlayer={selectedPlayer}
+            draftPicksFormatted={draftPicksFormatted}
+            teams={teams}
+            currentPickIndex={currentPickIndex}
+            draftView={draftView}
+            setDraftView={setDraftView}
+            selectedTeam={selectedTeam}
+            setSelectedTeam={setSelectedTeam}
+            selectedTeamId={selectedTeamId}
+            currentSeason={currentSeason}
+            getDraftedPlayersForTeam={getDraftedPlayersForTeam}
+            draftStats={draftStats}
+          />
+        </div>
       </div>
     </div>
   );

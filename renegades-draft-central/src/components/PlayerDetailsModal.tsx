@@ -10,6 +10,7 @@ import type { Player } from './player-pool/PlayerCard';
 import { FantasyImpactSection } from './player-details/FantasyImpactSection';
 import { RankingImpactSection } from './player-details/RankingImpactSection';
 import { EnhancedStatsSection } from './player-details/EnhancedStatsSection';
+import { DraftImpactSummary } from './player-details/DraftImpactSummary';
 import { useFantasyImpact } from '@/hooks/useFantasyImpact';
 import { useRankingImpact } from '@/hooks/useRankingImpact';
 import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
@@ -103,10 +104,16 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   useRealTimeUpdates({
     season: '2025-26',
   });
-  
+
   if (!player) return null;
 
   const fantasyScore = calculateFantasyScore(player);
+
+  // Check if we have all required data for impact analysis
+  const hasRequiredData = profile?.team_id && player && !isLoadingProfile;
+  const hasImpactData = fantasyImpact && rankingImpact;
+  const isImpactLoading = isLoadingFantasyImpact || isLoadingRankingImpact;
+  const shouldShowImpactSummary = hasRequiredData && (hasImpactData || isImpactLoading);
 
   const handleSelectClick = () => {
     setShowConfirmDialog(true);
@@ -388,7 +395,7 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className={isMobile ? "w-[90vw] max-w-[90vw]" : ""}>
+        <DialogContent className={`${isMobile ? "w-[95vw] max-w-[95vw] max-h-[90vh]" : "sm:max-w-[600px]"}`}>
           <DialogHeader>
             <DialogTitle>Confirm Player Selection</DialogTitle>
             <DialogDescription>
@@ -396,6 +403,16 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Draft Impact Summary */}
+          <div className="py-4">
+            <DraftImpactSummary
+              fantasyImpact={fantasyImpact}
+              rankingImpact={rankingImpact}
+              isLoading={isLoadingFantasyImpact || isLoadingRankingImpact}
+            />
+          </div>
+
           <DialogFooter className={`gap-2 ${isMobile ? 'flex-col' : ''}`}>
             <Button variant="outline" onClick={handleCancelSelection} className={isMobile ? "w-full" : ""} disabled={isMakingPick}>
               Cancel

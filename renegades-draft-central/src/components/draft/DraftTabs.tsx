@@ -10,7 +10,7 @@ import { useDraftTabState } from '@/hooks/useDraftTabState';
 import { useDraftStatus } from '@/hooks/useDraftStatus';
 import { useRealTimeDraftTabs } from '@/hooks/useRealTimeDraftTabs';
 import { useDraftTabService } from '@/hooks/useDraftTabService';
-import { DRAFT_TAB_CONFIG } from '@/config/draftTabsConfig';
+import { DRAFT_TAB_CONFIG, type DraftTabValue } from '@/config/draftTabsConfig';
 import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import type { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
@@ -64,16 +64,17 @@ interface DraftTabsProps {
 
 export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
   // Check URL hash for initial tab selection
-  const getInitialTab = () => {
+  const getInitialTab = (): DraftTabValue => {
     const hash = window.location.hash.replace('#', '');
     const validTabs = DRAFT_TAB_CONFIG.tabs.map(tab => tab.value);
-    return validTabs.includes(hash) ? (hash as typeof DRAFT_TAB_CONFIG.tabs[number]['value']) : (props.activeTab as typeof DRAFT_TAB_CONFIG.tabs[number]['value']);
+    const defaultTab = DRAFT_TAB_CONFIG.tabs[0].value; // Use first tab as fallback
+    return validTabs.includes(hash) ? (hash as DraftTabValue) : (props.activeTab as DraftTabValue) || defaultTab;
   };
 
   // Enhanced state management with custom hooks
   const tabState = useDraftTabState({
     initialTab: getInitialTab(),
-    onTabChange: (tab) => {
+    onTabChange: (tab: DraftTabValue) => {
       props.setActiveTab(tab);
       // Update URL hash for direct navigation
       window.location.hash = tab;
@@ -118,19 +119,7 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
         currentPickIndex={props.currentPickIndex}
       />
 
-      {/* Connection status indicator */}
-      <div className="flex items-center justify-end mb-2">
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`w-2 h-2 rounded-full ${
-            realtimeData.connectionStatus === 'connected' ? 'bg-green-500' :
-            realtimeData.connectionStatus === 'connecting' ? 'bg-yellow-500' :
-            'bg-red-500'
-          }`} />
-          <span className="text-gray-600">
-            {realtimeData.connectionStatus}
-          </span>
-        </div>
-      </div>
+
 
       {/* Tab Content Components with real-time enhancements */}
       <TabsContent value="board">
@@ -180,21 +169,9 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
       </TabsContent>
 
       <TabsContent value="league-analysis">
-        {/* League Analysis with real-time status */}
+        {/* League Analysis */}
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold">League Analysis</h3>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                realtimeData.connectionStatus === 'connected' ? 'bg-green-500' :
-                realtimeData.connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`} />
-              <span className="text-sm text-gray-600">
-                {realtimeData.connectionStatus}
-              </span>
-            </div>
-          </div>
+          <h3 className="text-xl font-bold mb-4">League Analysis</h3>
           <p className="text-gray-600">
             Live data updates enabled. {realtimeData.draftPicks.length} picks, {realtimeData.players.length} players, {realtimeData.teams.length} teams synced.
           </p>

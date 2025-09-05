@@ -19,7 +19,7 @@ const DraftStatsBar: React.FC<DraftStatsBarProps> = ({ draftStats, currentTeam, 
 
   return (
     <div
-      className="border-b border-border py-4 px-4 md:px-6 lg:px-8 transition-all duration-300"
+      className="border-b border-border py-6 px-4 md:px-6 lg:px-8 transition-all duration-300"
       style={{
         background: teamPalette
           ? `linear-gradient(90deg, ${teamPalette.background}40, hsl(var(--card)), ${teamPalette.background}40)`
@@ -27,7 +27,7 @@ const DraftStatsBar: React.FC<DraftStatsBarProps> = ({ draftStats, currentTeam, 
       }}
     >
       <div className="container mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Trophy

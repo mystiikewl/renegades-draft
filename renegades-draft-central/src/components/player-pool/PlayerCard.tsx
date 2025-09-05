@@ -129,7 +129,7 @@ export const PlayerCard = memo(({
     <Card
       key={player.id}
       className={cn(
-        "p-4 transition-all duration-300 border-2 cursor-pointer relative overflow-hidden",
+        "p-3 transition-all duration-300 border-2 cursor-pointer relative overflow-hidden",
         "hover:scale-[1.02] hover:shadow-xl",
         isSelected && "ring-4 ring-primary ring-offset-2 bg-primary/5 shadow-2xl",
         isFocused && "ring-4 ring-blue-400 ring-offset-2 bg-blue-50/50 shadow-2xl",
@@ -142,31 +142,69 @@ export const PlayerCard = memo(({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="font-bold text-base hover:underline cursor-pointer">
+      <div className="flex flex-col gap-1">
+        {/* Header row with name and favourite */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <div className="font-bold text-sm hover:underline cursor-pointer truncate">
               {player.name}
             </div>
             {fantasyScore > 0 && (
-              <div className="text-xs font-mono font-bold bg-primary/20 text-primary px-2 py-1 rounded backdrop-blur-sm">
+              <div className="text-xs font-mono font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded text-xs">
                 {fantasyScore.toFixed(1)}
               </div>
             )}
           </div>
-          <div className="text-xs text-muted-foreground mb-2">{player.nba_team}</div>
-          <div className="flex items-center gap-1 flex-wrap">
-            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+          {onToggleFavourite && (
+            <button
+              onClick={handleFavouriteClick}
+              className="p-0.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+              title={isFavourite ? "Remove from favourites" : "Add to favourites"}
+            >
+              <Star
+                className={cn(
+                  "h-3 w-3 transition-colors",
+                  isFavourite
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-400 hover:text-yellow-400"
+                )}
+              />
+            </button>
+          )}
+        </div>
+
+        {/* Team and position row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <span className="text-xs text-muted-foreground truncate">{player.nba_team}</span>
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-1.5 py-0.5 text-xs">
               {player.position}
             </Badge>
+          </div>
+          {isUnavailable && (
+            <Badge
+              variant="default"
+              className={cn(
+                "text-xs",
+                player.is_keeper ? "bg-yellow-600 text-white" : "bg-gray-600 text-white"
+              )}
+            >
+              {player.is_keeper ? "Keeper" : "Drafted"}
+            </Badge>
+          )}
+        </div>
+
+        {/* Stats and icons row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 flex-wrap">
             {player.rank && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <Target className="h-3 w-3 text-orange-400" />
                 <span className="text-xs font-bold text-orange-400">#{player.rank}</span>
               </div>
             )}
             {player.is_rookie && (
-              <Badge variant="default" className="text-xs bg-green-600 text-white">
+              <Badge variant="default" className="text-xs bg-green-600 text-white px-1 py-0">
                 R
               </Badge>
             )}
@@ -180,39 +218,9 @@ export const PlayerCard = memo(({
               <Shield className="h-3 w-3 text-yellow-400" />
             )}
           </div>
-        </div>
-        <div className="flex flex-col items-end">
-          {/* Favourite Star Icon */}
-          {onToggleFavourite && (
-            <button
-              onClick={handleFavouriteClick}
-              className="p-1 rounded-full hover:bg-white/10 transition-colors"
-              title={isFavourite ? "Remove from favourites" : "Add to favourites"}
-            >
-              <Star
-                className={cn(
-                  "h-4 w-4 transition-colors",
-                  isFavourite
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "text-gray-400 hover:text-yellow-400"
-                )}
-              />
-            </button>
-          )}
-          {isUnavailable && (
-            <Badge
-              variant="default"
-              className={cn(
-                "text-xs mb-1",
-                player.is_keeper ? "bg-yellow-600 text-white" : "bg-gray-600 text-white"
-              )}
-            >
-              {player.is_keeper ? "Keeper" : "Drafted"}
-            </Badge>
-          )}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
             <Target className="h-3 w-3" />
-            {statDisplay.label === '#' ? `#${statDisplay.value}` : `${statDisplay.value} ${statDisplay.label}`}
+            <span>{statDisplay.label === '#' ? `#${statDisplay.value}` : `${statDisplay.value} ${statDisplay.label}`}</span>
           </div>
         </div>
       </div>

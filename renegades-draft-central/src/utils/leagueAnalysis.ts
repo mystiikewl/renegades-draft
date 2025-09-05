@@ -209,3 +209,90 @@ export const prepareRadarChartData = (
     },
   ];
 };
+
+// New data processing functions for the three new visualizations
+
+export interface DraftEfficiencyData {
+  pickNumber: number;
+  fantasyScore: number;
+  playerName: string;
+  teamName: string;
+  position: string;
+}
+
+export interface PositionalBalanceData {
+  position: string;
+  count: number;
+  teamName: string;
+  idealCount: number;
+}
+
+/**
+ * Calculate draft efficiency data for scatter plot
+ */
+export function calculateDraftEfficiencyData(
+  draftPicks: (Tables<'draft_picks'> & { player: Tables<'players'> | null; original_team: Tables<'teams'>; current_team: Tables<'teams'>; })[]
+): DraftEfficiencyData[] {
+  return draftPicks
+    .filter(pick => pick.player)
+    .map(pick => ({
+      pickNumber: pick.pick_number,
+      fantasyScore: calculateFantasyScore(pick.player!),
+      playerName: pick.player!.name,
+      teamName: pick.current_team.name,
+      position: pick.player!.position || 'Unknown',
+    }))
+    .sort((a, b) => a.pickNumber - b.pickNumber);
+}
+
+/**
+ * Calculate positional balance data for radar chart
+ */
+export function calculatePositionalBalanceData(
+  teamId: string,
+  season: string,
+  draftPicks: (Tables<'draft_picks'> & { player: Tables<'players'> | null; original_team: Tables<'teams'>; current_team: Tables<'teams'>; })[],
+  keepersData: KeeperPlayer[],
+  teamName: string
+): PositionalBalanceData[] {
+  const teamPlayers = getCombinedPlayersForTeam(teamId, season, draftPicks, keepersData);
+
+  // Count players by position
+  const positionCounts: Record<string, number> = {};
+  teamPlayers.forEach(player => {
+    const position = 'position' in player ? player.position : (player as any).position || 'Unknown';
+    positionCounts[position] = (positionCounts[position] || 0) + 1;
+  });
+
+  // Standard NBA positions
+  const standardPositions = ['PG', 'SG', 'SF', 'PF', 'C'];
+  const idealRosterSize = 12; // Assuming 12-player rosters
+  const idealPerPosition = Math.floor(idealRosterSize / standardPositions.length);
+
+  return standardPositions.map(position => ({
+    position,
+    count: positionCounts[position] || 0,
+    teamName,
+    idealCount: idealPerPosition,
+  }));
+}
+
+/**
+ * Prepare positional balance data for radar chart
+ */
+export function preparePositionalBalanceChartData(
+  positionalData: PositionalBalanceData[]
+): Array<{ position: string; [key: string]: number | string }> {
+  if (positionalData.length === 0) return [];
+
+  const teamName = positionalData[0].teamName;
+  const maxCount = Math.max(...positionalData.map(d => d.count));
+  const maxIdeal = Math.max(...positionalData.map(d => d.idealCount));
+
+  return positionalData.map(data => ({
+    position: data.position,
+    [teamName]: data.count,
+    'Ideal Balance': data.idealCount,
+    fullMark: Math.max(maxCount, maxIdeal) + 1,
+  }));
+}

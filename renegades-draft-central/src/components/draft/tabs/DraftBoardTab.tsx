@@ -46,24 +46,7 @@ const DraftBoardTabHeader: React.FC<{
   if (isMobile) {
     return (
       <div className="space-y-4">
-        {/* Connection Status */}
-        {connectionStatus && (
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-2 text-sm">
-              {connectionStatus === 'connected' ? (
-                <Wifi className="w-4 h-4 text-green-500" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-red-500" />
-              )}
-              <span className={`${
-                connectionStatus === 'connected' ? 'text-green-600' :
-                connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {connectionStatus}
-              </span>
-            </div>
-          </div>
-        )}
+
 
         {/* Header with View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -90,26 +73,8 @@ const DraftBoardTabHeader: React.FC<{
 
   return (
     <>
-      {/* Connection Status and View Toggle */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          {connectionStatus && (
-            <div className="flex items-center gap-2 text-sm">
-              {connectionStatus === 'connected' ? (
-                <Wifi className="w-4 h-4 text-green-500" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-red-500" />
-              )}
-              <span className={`${
-                connectionStatus === 'connected' ? 'text-green-600' :
-                connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {connectionStatus}
-              </span>
-            </div>
-          )}
-        </div>
-
+      {/* View Toggle */}
+      <div className="flex justify-end items-center mb-4">
         <ToggleGroup
           type="single"
           value={draftView}

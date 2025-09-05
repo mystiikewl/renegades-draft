@@ -34,7 +34,7 @@ const DraftHero: React.FC<DraftHeroProps> = ({
 
   return (
     <div
-      className="relative h-auto min-h-[250px] md:min-h-[300px] overflow-hidden transition-all duration-500"
+      className="relative h-auto min-h-[180px] md:min-h-[220px] lg:min-h-[240px] overflow-hidden transition-all duration-500"
       style={{
         background: currentTeamPalette
           ? `linear-gradient(135deg, ${currentTeamPalette.primary}15, ${currentTeamPalette.secondary}10, hsl(var(--background)))`
@@ -89,12 +89,12 @@ const DraftHero: React.FC<DraftHeroProps> = ({
                 Pick #{currentPickIndex + 1}
               </div>
               {currentPick && (
-                <div
-                  className="text-xl md:text-2xl font-semibold text-shadow-md"
-                  style={{
-                    color: currentTeamPalette ? currentTeamPalette.text : 'hsl(var(--primary-foreground))',
-                  }}
-                >
+              <div
+                className="text-xl md:text-2xl font-semibold text-shadow-md"
+                style={{
+                  color: '#FFFFFF',
+                }}
+              >
                   <span className="inline-flex items-center gap-2">
                     <div
                       className="w-4 h-4 rounded-full animate-pulse"

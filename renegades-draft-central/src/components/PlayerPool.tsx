@@ -317,7 +317,7 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
 
       {/* Player Grid */}
       <div className="max-h-[500px] overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
           {filteredAndSortedPlayers.map((player, index) => {
             const availablePlayers = filteredAndSortedPlayers.filter(p => !p.is_drafted && !p.is_keeper);
             const availableIndex = availablePlayers.findIndex(p => p.id === player.id);
