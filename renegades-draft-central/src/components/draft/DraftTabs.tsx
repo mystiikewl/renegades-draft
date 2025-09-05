@@ -4,6 +4,7 @@ import { DraftTabNavigation } from './navigation/DraftTabNavigation';
 import { DraftStatusBanner } from './status/DraftStatusBanner';
 import { DraftBoardTab } from './tabs/DraftBoardTab';
 import { PlayerPoolTab } from './tabs/PlayerPoolTab';
+import { FavouritesTab } from './tabs/FavouritesTab';
 import { TeamRostersTab } from './tabs/TeamRostersTab';
 import { useDraftTabState } from '@/hooks/useDraftTabState';
 import { useDraftStatus } from '@/hooks/useDraftStatus';
@@ -153,6 +154,14 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
           canMakePick={props.canMakePick}
           currentPick={props.currentPick}
           teams={currentTeams}
+          draftStats={props.draftStats}
+          isMobile={props.isMobile}
+        />
+      </TabsContent>
+
+      <TabsContent value="favourites">
+        <FavouritesTab
+          canMakePick={props.canMakePick}
           draftStats={props.draftStats}
           isMobile={props.isMobile}
         />

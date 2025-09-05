@@ -1,4 +1,4 @@
-import { LayoutGrid, Users, TrendingUp } from 'lucide-react';
+import { LayoutGrid, Users, TrendingUp, Star } from 'lucide-react';
 
 export interface TabConfig {
   value: string;
@@ -11,6 +11,7 @@ export const DRAFT_TAB_CONFIG = {
   tabs: [
     { value: 'board', label: 'Draft Board', icon: LayoutGrid },
     { value: 'players', label: 'Player Pool', icon: Users },
+    { value: 'favourites', label: 'My Favourites', icon: Star },
     { value: 'teams', label: 'Team Rosters', icon: Users },
     { value: 'league-analysis', label: 'League Analysis', icon: TrendingUp, isRoute: true }
   ],

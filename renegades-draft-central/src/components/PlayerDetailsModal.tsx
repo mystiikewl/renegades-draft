@@ -14,6 +14,8 @@ import { useFantasyImpact } from '@/hooks/useFantasyImpact';
 import { useRankingImpact } from '@/hooks/useRankingImpact';
 import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
 import { useResponsive } from '@/hooks/use-responsive';
+import { useFavourites } from '@/hooks/useFavourites';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Trophy,
   Target,
@@ -23,7 +25,8 @@ import {
   Calendar,
   BarChart3,
   Activity,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { makeDraftPick } from '@/hooks/makeDraftPick';
@@ -45,10 +48,12 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   canMakePick
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [isMakingPick, setIsMakingPick] = useState(false);
-  const [activeTab, setActiveTab] = useState('stats');
-  const { isMobile, tabLayout } = useResponsive();
-  const { toast } = useToast();
+   const [isMakingPick, setIsMakingPick] = useState(false);
+   const [activeTab, setActiveTab] = useState('stats');
+   const { isMobile, tabLayout } = useResponsive();
+   const { toast } = useToast();
+   const { user } = useAuth();
+   const { isFavourite, toggleFavouriteMutation } = useFavourites();
 
   // Responsive tab label handler
   const getTabLabel = (fullText: string, mobileText: string): string => {
@@ -184,6 +189,30 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
     setShowConfirmDialog(false);
   };
 
+  const handleToggleFavourite = async () => {
+    if (!user || !player) return;
+
+    const wasFavourite = isFavourite(player.id);
+
+    try {
+      await toggleFavouriteMutation.mutateAsync(player.id);
+
+      // Show success toast
+      toast({
+        title: wasFavourite ? "Removed from favourites" : "Added to favourites",
+        description: `${player.name} ${wasFavourite ? 'removed from' : 'added to'} your favourites.`,
+      });
+    } catch (error) {
+      console.error('Failed to toggle favourite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favourites. Please try again.",
+        variant: "destructive",
+      });
+      // Error is already handled in the hook with UI rollback
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen && !showConfirmDialog} onOpenChange={onClose}>
@@ -191,17 +220,39 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
           className={`flex flex-col max-h-[90vh] ${isMobile ? 'w-[95vw] max-w-[95vw]' : 'sm:max-w-[500px] md:max-w-[600px] lg:max-w-[700px]'}`}
         >
           <DialogHeader className={isMobile ? "flex-shrink-0" : ""}>
-            <DialogTitle className={`text-2xl ${isMobile ? 'text-xl' : ''}`}>{player.name}</DialogTitle>
-            <DialogDescription className="flex flex-wrap items-center gap-2">
-              <span>{player.position}</span>
-              <span>•</span>
-              <span>{player.nba_team}</span>
-              {(player.is_drafted || player.is_keeper) && (
-                <Badge variant="default" className="ml-2 bg-gray-600 text-white">
-                  {player.is_keeper ? "Keeper" : "Drafted"}
-                </Badge>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <DialogTitle className={`text-2xl ${isMobile ? 'text-xl' : ''}`}>{player.name}</DialogTitle>
+                <DialogDescription className="flex flex-wrap items-center gap-2">
+                  <span>{player.position}</span>
+                  <span>•</span>
+                  <span>{player.nba_team}</span>
+                  {(player.is_drafted || player.is_keeper) && (
+                    <Badge variant="default" className="ml-2 bg-gray-600 text-white">
+                      {player.is_keeper ? "Keeper" : "Drafted"}
+                    </Badge>
+                  )}
+                </DialogDescription>
+              </div>
+              {user && (
+                <button
+                  onClick={handleToggleFavourite}
+                  className="p-2 rounded-full hover:bg-accent transition-colors ml-2"
+                  disabled={toggleFavouriteMutation.isPending}
+                  title={user && isFavourite(player.id) ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Star
+                    className={`h-5 w-5 transition-colors ${
+                      toggleFavouriteMutation.isPending
+                        ? 'text-muted-foreground'
+                        : user && isFavourite(player.id)
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-muted-foreground hover:text-yellow-400'
+                    }`}
+                  />
+                </button>
               )}
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           <div className="flex-grow overflow-y-auto py-2">
