@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { LayoutGrid, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { calculateFantasyScore } from '@/utils/fantasyScore';
+import { useFavourites } from '@/hooks/useFavourites';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type Player = Tables<'players'>;
 
@@ -22,8 +24,10 @@ interface PlayerPoolProps {
 }
 
 export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMakePick }: PlayerPoolProps) => {
-  usePerformanceMonitoring('PlayerPool');
-  const [searchTerm, setSearchTerm] = useState('');
+   usePerformanceMonitoring('PlayerPool');
+   const { user } = useAuth();
+   const { favouriteIds, toggleFavouriteMutation, isFavourite } = useFavourites();
+   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState('rank');
@@ -213,6 +217,16 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
     }
   };
 
+  const handleToggleFavourite = async (playerId: string) => {
+    if (!user) return; // Only authenticated users can favourite
+
+    try {
+      await toggleFavouriteMutation.mutateAsync(playerId);
+    } catch (error) {
+      console.error('Failed to toggle favourite:', error);
+    }
+  };
+
   // Keyboard navigation
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (viewMode !== 'pool') return;
@@ -319,6 +333,8 @@ export const PlayerPool = memo(({ players, onSelectPlayer, selectedPlayer, canMa
                 onClick={() => handlePlayerCardClick(player)}
                 sortOption={sortOption}
                 calculateFantasyScore={calculateFantasyScore}
+                isFavourite={user ? isFavourite(player.id) : false}
+                onToggleFavourite={user ? handleToggleFavourite : undefined}
               />
             );
           })}

@@ -340,6 +340,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_favourites: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_favourites_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -359,6 +388,10 @@ export type Database = {
           nba_team: string
           position: string
         }[]
+      }
+      insert_user_favourite: {
+        Args: { target_player_id: string }
+        Returns: Json
       }
       invite_and_assign_user_to_team: {
         Args:

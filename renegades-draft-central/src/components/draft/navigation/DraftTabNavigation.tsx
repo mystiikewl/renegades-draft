@@ -47,7 +47,7 @@ export const DraftTabNavigation: React.FC<DraftTabNavigationProps> = ({
   }
 
   return (
-    <TabsList className="grid w-full grid-cols-4">
+    <TabsList className="grid w-full grid-cols-5">
       {tabs.map((tab) => (
         <TabsTrigger
           key={tab.value}

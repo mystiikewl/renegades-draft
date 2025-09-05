@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Target, TrendingUp, Shield, Activity } from 'lucide-react';
+import { Target, TrendingUp, Shield, Activity, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -91,6 +91,8 @@ interface PlayerCardProps {
    onClick: () => void;
    sortOption: string;
    calculateFantasyScore: (player: Player) => number;
+   isFavourite?: boolean;
+   onToggleFavourite?: (playerId: string) => void;
  }
 
 export const PlayerCard = memo(({
@@ -100,7 +102,9 @@ export const PlayerCard = memo(({
    canMakePick,
    onClick,
    sortOption,
-   calculateFantasyScore
+   calculateFantasyScore,
+   isFavourite = false,
+   onToggleFavourite
 }: PlayerCardProps) => {
    const [isHovered, setIsHovered] = useState(false);
    const isUnavailable = player.is_drafted || player.is_keeper;
@@ -115,7 +119,12 @@ export const PlayerCard = memo(({
   };
 
   const playerTrend = getPlayerTrend();
-  
+
+  const handleFavouriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    onToggleFavourite?.(player.id);
+  };
+
   return (
     <Card
       key={player.id}
@@ -173,6 +182,23 @@ export const PlayerCard = memo(({
           </div>
         </div>
         <div className="flex flex-col items-end">
+          {/* Favourite Star Icon */}
+          {onToggleFavourite && (
+            <button
+              onClick={handleFavouriteClick}
+              className="p-1 rounded-full hover:bg-white/10 transition-colors"
+              title={isFavourite ? "Remove from favourites" : "Add to favourites"}
+            >
+              <Star
+                className={cn(
+                  "h-4 w-4 transition-colors",
+                  isFavourite
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-400 hover:text-yellow-400"
+                )}
+              />
+            </button>
+          )}
           {isUnavailable && (
             <Badge
               variant="default"

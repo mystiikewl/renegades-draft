@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Tables } from "@/integrations/supabase/types";
 import { calculateFantasyScore } from "@/utils/fantasyScore";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMemo, useCallback } from "react";
 
 export interface SearchableSelectOption {
    value: string;
@@ -143,6 +145,7 @@ export const EnhancedSearchableSelect = React.forwardRef<
   ...props
 }, ref) => {
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobile();
 
   const selectedOption = options.find((option) => option.value === value);
 
@@ -166,7 +169,15 @@ export const EnhancedSearchableSelect = React.forwardRef<
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[500px] p-0" sideOffset={4}>
+      <PopoverContent
+        className={cn(
+          "p-0",
+          isMobile
+            ? "w-[95vw] max-w-[95vw]"
+            : "w-[500px] min-w-[400px]"
+        )}
+        sideOffset={4}
+      >
         <Command>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -175,7 +186,12 @@ export const EnhancedSearchableSelect = React.forwardRef<
               className="border-0 px-0 shadow-none"
             />
           </div>
-          <CommandList className="h-[300px] overflow-y-auto">
+          <CommandList className={cn(
+            "overflow-y-auto",
+            isMobile
+              ? "h-[250px] touch-pan-y"
+              : "h-[300px]"
+          )}>
             <CommandEmpty className="py-6 text-center text-sm">{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
@@ -190,7 +206,12 @@ export const EnhancedSearchableSelect = React.forwardRef<
                       onValueChange(option.value);
                       setOpen(false);
                     }}
-                    className="flex items-center gap-3 px-3 py-3 hover:bg-accent/50 cursor-pointer border-b border-border/50 last:border-b-0"
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer border-b border-border/50 last:border-b-0",
+                      isMobile
+                        ? "min-h-[48px] active:bg-accent/70 hover:bg-accent/50"
+                        : "hover:bg-accent/50"
+                    )}
                   >
                     <Check
                       className={cn(
@@ -230,8 +251,13 @@ export const EnhancedSearchableSelect = React.forwardRef<
                         </div>
                       </div>
 
-                      {/* Stats preview */}
-                      <div className="grid grid-cols-5 gap-2 text-xs">
+                      {/* Stats preview - responsive grid */}
+                      <div className={cn(
+                        "grid gap-2 text-xs",
+                        isMobile
+                          ? "grid-cols-3"
+                          : "grid-cols-5"
+                      )}>
                         <div className="text-center">
                           <div className="font-medium">{player.points?.toFixed(1) || '0.0'}</div>
                           <div className="text-muted-foreground">PPG</div>
@@ -244,14 +270,18 @@ export const EnhancedSearchableSelect = React.forwardRef<
                           <div className="font-medium">{player.assists?.toFixed(1) || '0.0'}</div>
                           <div className="text-muted-foreground">APG</div>
                         </div>
-                        <div className="text-center">
-                          <div className="font-medium">{player.field_goal_percentage?.toFixed(1) || '0.0'}</div>
-                          <div className="text-muted-foreground">FG%</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{player.minutes_per_game?.toFixed(1) || '0.0'}</div>
-                          <div className="text-muted-foreground">MPG</div>
-                        </div>
+                        {!isMobile && (
+                          <>
+                            <div className="text-center">
+                              <div className="font-medium">{player.field_goal_percentage?.toFixed(1) || '0.0'}</div>
+                              <div className="text-muted-foreground">FG%</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{player.minutes_per_game?.toFixed(1) || '0.0'}</div>
+                              <div className="text-muted-foreground">MPG</div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </CommandItem>
