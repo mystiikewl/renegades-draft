@@ -216,7 +216,7 @@ export const RankingImpactSection = memo<RankingImpactSectionProps>(({
             <Trophy className="h-4 w-4" />
             Playoff Impact
           </h4>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-sm text-blue-900">
             <div className="flex justify-between">
               <span>Current Position:</span>
               <span className="font-medium">
@@ -244,7 +244,7 @@ export const RankingImpactSection = memo<RankingImpactSectionProps>(({
               </span>
             </div>
             {playoffImpact.keyCategoriesForPlayoffs.length > 0 && (
-              <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded mt-3">
+              <div className="text-xs text-blue-800 bg-blue-100 p-2 rounded mt-3">
                 <span className="font-medium">Key Categories for Playoffs: </span>
                 {playoffImpact.keyCategoriesForPlayoffs.join(', ')}
               </div>

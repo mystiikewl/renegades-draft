@@ -123,75 +123,72 @@ function calculateProjectedTeamStats(
   player: Tables<'players'>,
   currentTeamStats: TeamStats
 ): TeamStats {
-  // For dynasty leagues, we project based on games played
-  const gamesPlayed = player.games_played || 0;
-  const playerGamesPlayed = gamesPlayed > 0 ? gamesPlayed : 60; // Assume 60 games if not available
+  // Calculate average games played from current roster
+  const avgGamesPlayed = currentTeamStats.playerCount > 0
+    ? currentTeamStats.games_played / currentTeamStats.playerCount
+    : 0;
 
-  // Calculate per-game averages for the player
-  const playerStats = {
+  // Remaining games for player contribution (assuming 60-game fantasy season)
+  const remainingGames = Math.max(0, 60 - avgGamesPlayed);
+
+  // Player per-game averages
+  const playerGamesPlayed = Math.max(1, player.games_played || 1);
+  const playerPerGame = {
     points: (player.points || 0) / playerGamesPlayed,
     rebounds: (player.total_rebounds || 0) / playerGamesPlayed,
     assists: (player.assists || 0) / playerGamesPlayed,
     steals: (player.steals || 0) / playerGamesPlayed,
     blocks: (player.blocks || 0) / playerGamesPlayed,
     three_pointers_made: (player.three_pointers_made || 0) / playerGamesPlayed,
-    field_goal_percentage: player.field_goal_percentage || 0,
-    free_throw_percentage: player.free_throw_percentage || 0,
     turnovers: (player.turnovers || 0) / playerGamesPlayed,
   };
 
-  // Project remaining games (assume 60-game season)
-  const remainingGames = Math.max(0, 60 - currentTeamStats.games_played);
-  const playerProjectedGames = Math.min(remainingGames, 60 - playerGamesPlayed);
-
-  // Calculate additional stats from new player
-  const additionalStats = {
-    points: playerStats.points * playerProjectedGames,
-    rebounds: playerStats.rebounds * playerProjectedGames,
-    assists: playerStats.assists * playerProjectedGames,
-    steals: playerStats.steals * playerProjectedGames,
-    blocks: playerStats.blocks * playerProjectedGames,
-    three_pointers_made: playerStats.three_pointers_made * playerProjectedGames,
-    turnovers: playerStats.turnovers * playerProjectedGames,
+  // Prorated player contribution based on remaining games
+  const playerContribution = {
+    points: playerPerGame.points * remainingGames,
+    rebounds: playerPerGame.rebounds * remainingGames,
+    assists: playerPerGame.assists * remainingGames,
+    steals: playerPerGame.steals * remainingGames,
+    blocks: playerPerGame.blocks * remainingGames,
+    three_pointers_made: playerPerGame.three_pointers_made * remainingGames,
+    turnovers: playerPerGame.turnovers * remainingGames,
   };
 
-  // For percentages, use player's career percentages as projection
-  const projectedPercentages = {
-    field_goal_percentage: playerStats.field_goal_percentage,
-    free_throw_percentage: playerStats.free_throw_percentage,
-  };
+  // Weighted percentage averages using games played as weights
+  const teamWeight = currentTeamStats.playerCount * avgGamesPlayed;
+  const playerWeight = playerGamesPlayed;
+  const totalWeight = teamWeight + playerWeight;
+
+  const newFieldGoalPercentage = totalWeight > 0
+    ? ((currentTeamStats.field_goal_percentage * teamWeight) + (player.field_goal_percentage * playerWeight)) / totalWeight
+    : player.field_goal_percentage || 0;
+
+  const newFreeThrowPercentage = totalWeight > 0
+    ? ((currentTeamStats.free_throw_percentage * teamWeight) + (player.free_throw_percentage * playerWeight)) / totalWeight
+    : player.free_throw_percentage || 0;
 
   // Calculate new totals
   const newTotalStats = {
-    points: currentTeamStats.points + additionalStats.points,
-    rebounds: currentTeamStats.rebounds + additionalStats.rebounds,
-    assists: currentTeamStats.assists + additionalStats.assists,
-    steals: currentTeamStats.steals + additionalStats.steals,
-    blocks: currentTeamStats.blocks + additionalStats.blocks,
-    three_pointers_made: currentTeamStats.three_pointers_made + additionalStats.three_pointers_made,
-    turnovers: currentTeamStats.turnovers + additionalStats.turnovers,
+    points: currentTeamStats.points + playerContribution.points,
+    rebounds: currentTeamStats.rebounds + playerContribution.rebounds,
+    assists: currentTeamStats.assists + playerContribution.assists,
+    steals: currentTeamStats.steals + playerContribution.steals,
+    blocks: currentTeamStats.blocks + playerContribution.blocks,
+    three_pointers_made: currentTeamStats.three_pointers_made + playerContribution.three_pointers_made,
+    turnovers: currentTeamStats.turnovers + playerContribution.turnovers,
   };
 
-  // Calculate new percentages (weighted average)
-  const totalGamesPlayed = currentTeamStats.games_played + playerProjectedGames;
-  const newFieldGoalPercentage =
-    totalGamesPlayed > 0
-      ? ((currentTeamStats.field_goal_percentage * currentTeamStats.games_played) +
-         (projectedPercentages.field_goal_percentage * playerProjectedGames)) / totalGamesPlayed
-      : currentTeamStats.field_goal_percentage;
-
-  const newFreeThrowPercentage =
-    totalGamesPlayed > 0
-      ? ((currentTeamStats.free_throw_percentage * currentTeamStats.games_played) +
-         (projectedPercentages.free_throw_percentage * playerProjectedGames)) / totalGamesPlayed
-      : currentTeamStats.free_throw_percentage;
+  // Update games played for projected team (average across all players including new one)
+  const projectedGamesPlayed = currentTeamStats.playerCount > 0
+    ? (currentTeamStats.games_played + remainingGames) / (currentTeamStats.playerCount + 1)
+    : remainingGames;
 
   return {
     ...currentTeamStats,
     ...newTotalStats,
     field_goal_percentage: newFieldGoalPercentage,
     free_throw_percentage: newFreeThrowPercentage,
-    games_played: totalGamesPlayed,
+    games_played: projectedGamesPlayed,
     playerCount: currentTeamStats.playerCount + 1,
   };
 }

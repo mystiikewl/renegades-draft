@@ -56,7 +56,7 @@ export const FantasyImpactSection = memo<FantasyImpactSectionProps>(({
     );
   }
 
-  const { impacts, totalFantasyScore, newTotalFantasyScore, fantasyScoreImprovement } = fantasyImpact;
+  const { impacts, totalFantasyScore, newTotalFantasyScore, fantasyScoreImprovement, overallRank, newOverallRank, overallRankChange } = fantasyImpact;
 
   const getImpactColor = (improvement: number) => {
     if (improvement > 0) return 'text-green-600';
@@ -108,6 +108,13 @@ export const FantasyImpactSection = memo<FantasyImpactSectionProps>(({
             <span>→</span>
             <span>Projected: {newTotalFantasyScore.toFixed(1)}</span>
           </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <span>League Rank: #{overallRank}</span>
+            <span className={cn(getImpactColor(-overallRankChange))}>
+              {getImpactIcon(-overallRankChange)}
+              <span>→ #{newOverallRank} {overallRankChange > 0 ? `(+${overallRankChange})` : `(-${overallRankChange})`}</span>
+            </span>
+          </div>
         </div>
 
         {/* Category Breakdown */}
@@ -132,19 +139,22 @@ export const FantasyImpactSection = memo<FantasyImpactSectionProps>(({
 
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatValue(impact.currentValue, impact.category)}</span>
-                  <span>{formatValue(impact.projectedValue, impact.category)}</span>
+                  <span>Current: {formatValue(impact.currentValue, impact.category)}</span>
+                  <span>Projected: {formatValue(impact.projectedValue, impact.category)}</span>
                 </div>
                 <Progress
-                  value={Math.abs(impact.improvementPercent)}
+                  value={impact.leaguePercentile || 0}
+                  max={100}
                   className={cn(
                     "h-2",
                     impact.improvement > 0 ? "bg-green-100" : impact.improvement < 0 ? "bg-red-100" : "bg-gray-100"
                   )}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Current Rank: #{impact.categoryRank}</span>
-                  <span>Projected Rank: #{impact.newCategoryRank}</span>
+                  <span>Rank: #{impact.categoryRank}</span>
+                  <span className={cn("font-medium", getImpactColor(-impact.rankChange))}>
+                    → #{impact.newCategoryRank} {impact.rankChange > 0 ? `(+${impact.rankChange})` : `(-${impact.rankChange})`}
+                  </span>
                 </div>
               </div>
             </div>

@@ -22,6 +22,10 @@ export const useRankingImpact = ({ player, teamId, season }: UseRankingImpactPro
   const { data: currentTeamStats, isLoading: isLoadingTeamStats } = useQuery({
     queryKey: ['teamStatsForRanking', teamId, season],
     queryFn: async () => {
+      if (!teamId) {
+        throw new Error('No team ID provided for ranking impact calculation');
+      }
+
       // Get draft picks for the team
       const { data: picksData, error: picksError } = await supabase
         .from('draft_picks')
@@ -31,8 +35,20 @@ export const useRankingImpact = ({ player, teamId, season }: UseRankingImpactPro
 
       if (picksError) throw picksError;
 
-      // Get player details
-      const playerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
+      // Get keepers
+      const { data: keepersData, error: keepersError } = await supabase
+        .from('keepers')
+        .select('player_id')
+        .eq('team_id', teamId)
+        .eq('season', season) as { data: { player_id: string }[] | null; error: any };
+
+      if (keepersError) throw keepersError;
+
+      // Combine player IDs from picks and keepers, remove duplicates
+      const draftPlayerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
+      const keeperPlayerIds = keepersData?.map(keeper => keeper.player_id) || [];
+      const playerIds = [...new Set([...draftPlayerIds, ...keeperPlayerIds])];
+
       if (playerIds.length === 0) {
         return getEmptyTeamStats();
       }
@@ -63,16 +79,35 @@ export const useRankingImpact = ({ player, teamId, season }: UseRankingImpactPro
       const standings: LeagueStandings['teams'] = [];
 
       for (const team of teams) {
+        // Get draft picks
         const { data: picksData, error: picksError } = await supabase
           .from('draft_picks')
           .select('player_id')
           .eq('current_team_id', team.id)
-          .eq('season', season) as any;
+          .eq('season', season) as { data: { player_id: string | null }[] | null; error: any };
 
-        if (picksError) continue;
+        if (picksError) {
+          console.warn(`Error fetching picks for team ${team.id}:`, picksError);
+          continue;
+        }
 
-        const playerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
-        const teamStats = getEmptyTeamStats();
+        // Get keepers
+        const { data: teamKeepers, error: keepersError } = await supabase
+          .from('keepers')
+          .select('player_id')
+          .eq('team_id', team.id)
+          .eq('season', season) as { data: { player_id: string }[] | null; error: any };
+
+        if (keepersError) {
+          console.warn(`Error fetching keepers for team ${team.id}:`, keepersError);
+        }
+
+        // Combine player IDs from picks and keepers, remove duplicates
+        const draftPlayerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
+        const keeperPlayerIds = teamKeepers?.map(keeper => keeper.player_id) || [];
+        const playerIds = [...new Set([...draftPlayerIds, ...keeperPlayerIds])];
+
+        let calculatedStats = getEmptyTeamStats();
 
         if (playerIds.length > 0) {
           const { data: playersData, error: playersError } = await supabase
@@ -81,44 +116,27 @@ export const useRankingImpact = ({ player, teamId, season }: UseRankingImpactPro
             .in('id', playerIds);
 
           if (!playersError && playersData) {
-            const calculatedStats = calculateTeamStatsFromPlayers(playersData);
-            standings.push({
-              id: team.id,
-              name: team.name,
-              totalFantasyScore: calculateFantasyScore(calculatedStats),
-              categoryStats: {
-                points: calculatedStats.points,
-                rebounds: calculatedStats.rebounds,
-                assists: calculatedStats.assists,
-                steals: calculatedStats.steals,
-                blocks: calculatedStats.blocks,
-                three_pointers_made: calculatedStats.three_pointers_made,
-                field_goal_percentage: calculatedStats.field_goal_percentage,
-                free_throw_percentage: calculatedStats.free_throw_percentage,
-              },
-            });
+            calculatedStats = calculateTeamStatsFromPlayers(playersData);
           } else {
-            standings.push({
-              id: team.id,
-              name: team.name,
-              totalFantasyScore: 0,
-              categoryStats: {
-                points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
-                three_pointers_made: 0, field_goal_percentage: 0, free_throw_percentage: 0
-              },
-            });
+            console.warn(`Error fetching players for team ${team.id}:`, playersError);
           }
-        } else {
-          standings.push({
-            id: team.id,
-            name: team.name,
-            totalFantasyScore: 0,
-            categoryStats: {
-              points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
-              three_pointers_made: 0, field_goal_percentage: 0, free_throw_percentage: 0
-            },
-          });
         }
+
+        standings.push({
+          id: team.id,
+          name: team.name,
+          totalFantasyScore: calculateFantasyScore(calculatedStats),
+          categoryStats: {
+            points: calculatedStats.points,
+            rebounds: calculatedStats.rebounds,
+            assists: calculatedStats.assists,
+            steals: calculatedStats.steals,
+            blocks: calculatedStats.blocks,
+            three_pointers_made: calculatedStats.three_pointers_made,
+            field_goal_percentage: calculatedStats.field_goal_percentage,
+            free_throw_percentage: calculatedStats.free_throw_percentage,
+          },
+        });
       }
 
       return { teams: standings };

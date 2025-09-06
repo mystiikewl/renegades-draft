@@ -63,7 +63,7 @@ export const EnhancedStatsSection = memo<EnhancedStatsSectionProps>(({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Enhanced Player Statistics
+          NBA Player Statistics
         </CardTitle>
         <div className="text-sm text-muted-foreground">
           Detailed performance metrics and fantasy analysis
@@ -85,7 +85,7 @@ export const EnhancedStatsSection = memo<EnhancedStatsSectionProps>(({
             </Badge>
           </div>
           <div className="text-xs text-muted-foreground">
-            Calculated based on ESPN 8-category dynasty scoring
+            Calculated based on NBA 2024-2025 Season Stats
           </div>
         </div>
 

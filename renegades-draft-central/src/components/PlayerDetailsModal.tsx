@@ -110,7 +110,7 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const fantasyScore = calculateFantasyScore(player);
 
   // Check if we have all required data for impact analysis
-  const hasRequiredData = profile?.team_id && player && !isLoadingProfile;
+  const hasRequiredData = !!profile?.team_id && !!player && !isLoadingProfile;
   const hasImpactData = fantasyImpact && rankingImpact;
   const isImpactLoading = isLoadingFantasyImpact || isLoadingRankingImpact;
   const shouldShowImpactSummary = hasRequiredData && (hasImpactData || isImpactLoading);

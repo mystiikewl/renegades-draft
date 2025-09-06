@@ -24,42 +24,136 @@ interface LeagueTeamStats {
   stats: TeamStats;
 }
 
+function hasValidStats(stats: TeamStats | null): boolean {
+  if (!stats) return false;
+  return stats.playerCount > 0 && (stats.points > 0 || stats.rebounds > 0 || stats.assists > 0);
+}
+
+async function calculateLeagueAverages(season: string): Promise<TeamStats> {
+  // Fetch recent players for league averages (limit to avoid too many)
+  const { data: players, error } = await supabase
+    .from('players')
+    .select('*')
+    .gte('games_played', 10) // Players with meaningful games
+    .order('season', { ascending: false })
+    .limit(500); // Reasonable limit
+
+  if (error || !players || players.length === 0) {
+    // Fallback to zero stats if no data
+    return {
+      points: 0,
+      rebounds: 0,
+      assists: 0,
+      steals: 0,
+      blocks: 0,
+      three_pointers_made: 0,
+      field_goal_percentage: 0,
+      free_throw_percentage: 0,
+      turnovers: 0,
+      games_played: 60, // Standard fantasy season games
+      playerCount: 0,
+    };
+  }
+
+  // Calculate average per-game stats
+  const standardGames = 60; // Fantasy season
+
+  const avgPPG = players.reduce((sum, p) => sum + ((p.points || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avgRPG = players.reduce((sum, p) => sum + ((p.total_rebounds || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avgAPG = players.reduce((sum, p) => sum + ((p.assists || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avgSPG = players.reduce((sum, p) => sum + ((p.steals || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avgBPG = players.reduce((sum, p) => sum + ((p.blocks || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avg3PMG = players.reduce((sum, p) => sum + ((p.three_pointers_made || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+  const avgTOV = players.reduce((sum, p) => sum + ((p.turnovers || 0) / Math.max(1, p.games_played || 1)), 0) / players.length;
+
+  // For percentages, average the individual percentages
+  const avgFG = players.reduce((sum, p) => sum + (p.field_goal_percentage || 0), 0) / players.length;
+  const avgFT = players.reduce((sum, p) => sum + (p.free_throw_percentage || 0), 0) / players.length;
+
+  return {
+    points: avgPPG * standardGames,
+    rebounds: avgRPG * standardGames,
+    assists: avgAPG * standardGames,
+    steals: avgSPG * standardGames,
+    blocks: avgBPG * standardGames,
+    three_pointers_made: avg3PMG * standardGames,
+    field_goal_percentage: avgFG,
+    free_throw_percentage: avgFT,
+    turnovers: avgTOV * standardGames,
+    games_played: standardGames,
+    playerCount: 9, // Standard roster size
+  };
+}
+
 /**
  * Custom hook to calculate fantasy impact of adding a player to a team
  */
 export const useFantasyImpact = ({ player, teamId, season }: UseFantasyImpactProps) => {
-  // Fetch current team stats
+  // Fetch current team stats with fallback
   const { data: currentTeamStats, isLoading: isLoadingTeamStats } = useQuery({
     queryKey: ['teamStats', teamId, season],
     queryFn: async (): Promise<TeamStats> => {
-      // First get draft picks
-      const { data: picksData, error: picksError } = await supabase
-        .from('draft_picks')
-        .select('player_id')
-        .eq('current_team_id', teamId)
-        .eq('season', season) as { data: { player_id: string | null }[] | null; error: any };
-
-      if (picksError) throw picksError;
-
-      // Get player details
-      const playerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
-      if (playerIds.length === 0) {
-        return {
-          points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
-          three_pointers_made: 0, field_goal_percentage: 0, free_throw_percentage: 0,
-          turnovers: 0, games_played: 0, playerCount: 0
-        };
+      if (!teamId) {
+        throw new Error('No team ID provided for fantasy impact calculation');
       }
 
-      const { data: playersData, error: playersError } = await supabase
-        .from('players')
-        .select('*')
-        .in('id', playerIds);
+      // Helper function to fetch team stats for a given season
+      const fetchTeamStatsForSeason = async (targetSeason: string): Promise<TeamStats | null> => {
+        // Get draft picks
+        const { data: picksData, error: picksError } = await supabase
+          .from('draft_picks')
+          .select('player_id')
+          .eq('current_team_id', teamId)
+          .eq('season', targetSeason);
 
-      if (playersError) throw playersError;
+        if (picksError) return null;
 
-      // Calculate current team stats from drafted players and keepers
-      return calculateTeamStats(playersData || []);
+        // Get keepers
+        const { data: keepersData, error: keepersError } = await supabase
+          .from('keepers')
+          .select('player_id')
+          .eq('team_id', teamId)
+          .eq('season', targetSeason);
+
+        if (keepersError) return null;
+
+        // Combine player IDs from picks and keepers, remove duplicates
+        const draftPlayerIds = picksData?.map(pick => pick.player_id).filter(Boolean) || [];
+        const keeperPlayerIds = keepersData?.map(keeper => keeper.player_id) || [];
+        const playerIds = [...new Set([...draftPlayerIds, ...keeperPlayerIds])];
+
+        if (playerIds.length === 0) {
+          return null;
+        }
+
+        const { data: playersData, error: playersError } = await supabase
+          .from('players')
+          .select('*')
+          .in('id', playerIds);
+
+        if (playersError) return null;
+
+        // Calculate team stats from players
+        return calculateTeamStats(playersData || []);
+      };
+
+      // Try current season first
+      let stats = await fetchTeamStatsForSeason(season);
+
+      // If no valid stats, fallback to previous season
+      if (!hasValidStats(stats)) {
+        const fallbackSeason = season === '2025-26' ? '2024-25' : null;
+        if (fallbackSeason) {
+          stats = await fetchTeamStatsForSeason(fallbackSeason);
+        }
+      }
+
+      // If still no valid stats, use league averages
+      if (!hasValidStats(stats)) {
+        stats = await calculateLeagueAverages(season);
+      }
+
+      return stats;
     },
     enabled: !!teamId && !!season,
   });
@@ -78,20 +172,47 @@ export const useFantasyImpact = ({ player, teamId, season }: UseFantasyImpactPro
       const leagueStats: LeagueTeamStats[] = [];
 
       for (const team of teams) {
+        // Get draft picks
         const { data: teamPicks, error: picksError } = await supabase
           .from('draft_picks')
-          .select(`
-            *,
-            player:players(*)
-          `)
+          .select('player_id')
           .eq('current_team_id', team.id)
           .eq('season', season);
 
-        if (picksError) continue;
+        if (picksError) {
+          console.warn(`Error fetching picks for team ${team.id}:`, picksError);
+          continue;
+        }
 
-        const teamPlayers = teamPicks
-          .filter(pick => pick.player)
-          .map(pick => pick.player!);
+        // Get keepers
+        const { data: teamKeepers, error: keepersError } = await supabase
+          .from('keepers')
+          .select('player_id')
+          .eq('team_id', team.id)
+          .eq('season', season);
+
+        if (keepersError) {
+          console.warn(`Error fetching keepers for team ${team.id}:`, keepersError);
+        }
+
+        // Combine player IDs from picks and keepers, remove duplicates
+        const draftPlayerIds = teamPicks?.map(pick => pick.player_id).filter(Boolean) || [];
+        const keeperPlayerIds = teamKeepers?.map(keeper => keeper.player_id) || [];
+        const teamPlayerIds = [...new Set([...draftPlayerIds, ...keeperPlayerIds])];
+
+        let teamPlayers: Tables<'players'>[] = [];
+        if (teamPlayerIds.length > 0) {
+          const { data: playersData, error: playersError } = await supabase
+            .from('players')
+            .select('*')
+            .in('id', teamPlayerIds);
+
+          if (playersError) {
+            console.warn(`Error fetching players for team ${team.id}:`, playersError);
+          } else {
+            teamPlayers = playersData || [];
+          }
+        }
 
         const teamStats = calculateTeamStats(teamPlayers);
 
