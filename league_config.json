@@ -1,0 +1,9 @@
+{
+  "csv_output_path": "nba_player_stats.csv",
+  "backup_old_csv": true,
+  "cleanup_mode": "archive",
+  "schedule": "0 6 * * 1-5",
+  "max_retry_attempts": 3,
+  "retry_delay": 300,
+  "timeout_seconds": 60
+}
