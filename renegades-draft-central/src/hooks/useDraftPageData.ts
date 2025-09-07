@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { usePlayers } from '@/hooks/usePlayers';
+import { useRealTimePlayers } from '@/hooks/useRealTimePlayers';
 import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import { useTeams } from '@/hooks/useTeams';
 import { useDraftState, DraftSettings } from '@/hooks/useDraftState';
@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Database, Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { fetchProfileByUserId, fetchProfileById } from '@/integrations/supabase/services/profiles';
 import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
@@ -61,7 +62,9 @@ interface DraftPageData {
 
 export const useDraftPageData = (): DraftPageData => {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const { data: playersDataRaw, isLoading: isLoadingPlayers } = usePlayers();
+  const playersQuery = useRealTimePlayers();
+  const playersDataRaw = playersQuery.data || [];
+  const isLoadingPlayers = playersQuery.isLoading;
   const { data: teamsDataRaw, isLoading: isLoadingTeams } = useTeams();
   const teamsData = useMemo(() => (teamsDataRaw || []) as { id: string; name: string }[], [teamsDataRaw]);
   const {
@@ -90,6 +93,7 @@ export const useDraftPageData = (): DraftPageData => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchProfile = async (session: { user?: { id: string } } | null) => {
@@ -170,12 +174,31 @@ export const useDraftPageData = (): DraftPageData => {
   const handleConfirmPick = async () => {
     if (!selectedPlayer || !currentPick) return;
 
+    // Optimistic update
+    const optimisticPick = {
+      ...currentPick,
+      is_used: true,
+      player_id: selectedPlayer.id,
+      player: selectedPlayer,
+    };
+    const optimisticDraftPicks = draftPicks.map(pick => pick.id === currentPick.id ? optimisticPick : pick);
+    const optimisticPlayers = players.map(player => player.id === selectedPlayer.id ? { ...player, is_drafted: true } : player);
+    const optimisticCompletedPicks = completedPicks + 1;
+
+    // Update local state optimistically
+    // Note: This assumes access to setters or global state; for simplicity, invalidate and let real-time handle, but add local for instant
+    queryClient.setQueryData(['draftPicks'], optimisticDraftPicks);
+    queryClient.setQueryData(['players'], optimisticPlayers);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       try {
         const userProfile = await fetchProfileByUserId(user.id);
         
         if (!userProfile?.team_id) {
+          // Rollback optimistic update on error
+          queryClient.invalidateQueries({ queryKey: ['draftPicks'] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
           toast({
             title: "Error",
             description: "You are not assigned to a team. Please contact the draft administrator.",
@@ -185,6 +208,9 @@ export const useDraftPageData = (): DraftPageData => {
         }
 
         if (currentPick.current_team_id !== userProfile.team_id) {
+          // Rollback
+          queryClient.invalidateQueries({ queryKey: ['draftPicks'] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
           toast({
             title: "Error",
             description: `It's not your team's turn to pick. ${currentPick.current_team?.name} is on the clock.`,
@@ -193,6 +219,9 @@ export const useDraftPageData = (): DraftPageData => {
           return;
         }
       } catch (error) {
+        // Rollback
+        queryClient.invalidateQueries({ queryKey: ['draftPicks'] });
+        queryClient.invalidateQueries({ queryKey: ['players'] });
         console.error('Error fetching user profile:', error);
         toast({
           title: "Error",
@@ -215,6 +244,9 @@ export const useDraftPageData = (): DraftPageData => {
         description: `${result.current_team.name} selected ${selectedPlayer.name} with pick #${currentPick.pick_number}`,
       });
     } catch (error: unknown) {
+      // Rollback optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['draftPicks'] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
       console.error('Error making draft pick:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
@@ -276,7 +308,7 @@ export const useDraftPageData = (): DraftPageData => {
 
   const selectedTeamId = teamsData.find(team => team.name === selectedTeam)?.id || '';
 
-  const isLoading = isLoadingPlayers || isLoadingTeams || isLoadingDraftState || isLoadingKeepers;
+  const isLoading = isLoadingPlayers || isLoadingTeams || isLoadingDraftState || isLoadingKeepers || playersQuery.isLoading;
 
   return {
     profile,

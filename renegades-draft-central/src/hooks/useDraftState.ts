@@ -5,7 +5,7 @@ import { useTeams } from '@/hooks/useTeams';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 import { Team } from '@/types/team';
-import { fetchDraftSettings as fetchDraftSettingsService, DraftSettings as DraftSettingsDb } from '@/integrations/supabase/services/draftSettings';
+import { fetchDraftSettings as fetchDraftSettingsService } from '@/integrations/supabase/services/draftSettings';
 import { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
 
 // Define types for draft settings from the database
@@ -83,8 +83,8 @@ export const useDraftState = () => {
   useEffect(() => {
     mutateDraftSettings(); // Initial fetch
 
-    // Real-time subscription
-    const subscription = supabase
+    // Real-time subscription for draft_settings
+    const settingsSubscription = supabase
       .channel('draft_settings_changes')
       .on(
         'postgres_changes',
@@ -105,8 +105,24 @@ export const useDraftState = () => {
       )
       .subscribe();
 
+    // Real-time subscription for draft_picks to update current pick index
+    const picksSubscription = supabase
+      .channel('draft_picks_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'draft_picks' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new.is_used && !payload.old.is_used) {
+            // A pick was used, advance the current pick index
+            setCurrentPickIndex(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(settingsSubscription);
+      supabase.removeChannel(picksSubscription);
     };
   }, [mutateDraftSettings]);
 
