@@ -182,7 +182,7 @@ All colors MUST be HSL.
     background: hsl(var(--gradient-active));
     background-size: 200% 200%;
     animation: gradient-shift 3s ease infinite;
-    color: hsl(var(--draft-active-foreground));
+    color: hsl(var(--draft-active-background));
     font-weight: 600;
   }
 

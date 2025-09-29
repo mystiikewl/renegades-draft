@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DraftTabNavigation } from './navigation/DraftTabNavigation';
 import { DraftStatusBanner } from './status/DraftStatusBanner';
@@ -13,6 +14,13 @@ import { useDraftTabService } from '@/hooks/useDraftTabService';
 import { DRAFT_TAB_CONFIG, type DraftTabValue } from '@/config/draftTabsConfig';
 import type { Player as PlayerType } from '@/components/player-pool/PlayerCard';
 import type { DraftPickWithRelations } from '@/integrations/supabase/types/draftPicks';
+
+interface DraftedPlayer {
+  round: number;
+  pick: number;
+  overallPick: number;
+  nbaTeam: string;
+}
 
 interface DraftPickFormatted {
   round: number;
@@ -53,39 +61,51 @@ interface DraftTabsProps {
   setSelectedTeam: (teamName: string) => void;
   selectedTeamId: string;
   currentSeason: string;
-  getDraftedPlayersForTeam: (teamName: string) => (any & {
-    round: number;
-    pick: number;
-    overallPick: number;
-    nbaTeam: string;
-  })[];
+  getDraftedPlayersForTeam: (teamName: string) => DraftedPlayer[];
   draftStats: DraftStats;
 }
 
 export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
-  // Check URL hash for initial tab selection
-  const getInitialTab = (): DraftTabValue => {
+  // Define getInitialTab function
+  function getInitialTab(): DraftTabValue {
     const hash = window.location.hash.replace('#', '');
     const validTabs = DRAFT_TAB_CONFIG.tabs.map(tab => tab.value);
-    const defaultTab = DRAFT_TAB_CONFIG.tabs[0].value; // Use first tab as fallback
-    return validTabs.includes(hash) ? (hash as DraftTabValue) : (props.activeTab as DraftTabValue) || defaultTab;
-  };
+    if (validTabs.includes(hash as DraftTabValue)) {
+      return hash as DraftTabValue;
+    }
+    return 'board'; // default tab
+  }
+
+  // Check URL hash for initial tab selection
+  const location = useLocation();
+
+  // Destructure props to avoid dependency issues
+  const { setActiveTab } = props;
 
   // Enhanced state management with custom hooks
   const tabState = useDraftTabState({
     initialTab: getInitialTab(),
     onTabChange: (tab: DraftTabValue) => {
-      props.setActiveTab(tab);
+      setActiveTab(tab);
       // Update URL hash for direct navigation
       window.location.hash = tab;
     }
   });
 
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    const validTabs = DRAFT_TAB_CONFIG.tabs.map(tab => tab.value);
+    const tabHash = hash as DraftTabValue;
+    if (validTabs.includes(tabHash) && setActiveTab && tabHash !== tabState.activeTab) {
+      setActiveTab(tabHash);
+    }
+  }, [location.hash, setActiveTab, tabState.activeTab]);
+
   // Real-time data management (background service)
   const realtimeData = useRealTimeDraftTabs();
 
   // Enhanced status logic with real-time data
-  const draftStatus = useDraftStatus({
+  const { currentTeam, teamPalette } = useDraftStatus({
     draftStats: props.draftStats,
     currentPick: props.currentPick,
     teams: props.teams,
@@ -106,6 +126,8 @@ export const DraftTabs: React.FC<DraftTabsProps> = (props) => {
         onTabChange={tabState.setActiveTab}
         isMobile={props.isMobile}
         navigate={props.navigate}
+        currentTeam={currentTeam}
+        teams={props.teams}
       />
 
       {/* Enhanced Status Banner with connection status */}

@@ -101,7 +101,7 @@ export const OnClockBanner: React.FC<OnClockBannerProps> = ({
               color: teamPalette.text,
               borderColor: teamPalette.accent
             }}
-            onClick={() => navigate?.('/draft#players')}
+            onClick={() => window.location.hash = 'players'}
           >
             Make Your Pick
             <ArrowRight className="h-4 w-4 ml-1" />
