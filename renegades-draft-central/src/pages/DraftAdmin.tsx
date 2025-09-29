@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useDraftState } from '@/hooks/useDraftState';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Settings, ListOrdered, UserRound, Users, RefreshCw, BarChart3, Shield, Activity } from 'lucide-react';
+import { Settings, ListOrdered, UserRound, Users, RefreshCw, BarChart3, Shield, Activity, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -73,6 +73,34 @@ const DraftAdmin: React.FC = () => {
     window.location.reload();
   });
 
+  // SEO Meta Tags Effect
+  React.useEffect(() => {
+    document.title = 'Draft Admin | Renegades Draft';
+
+    // Add meta description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', 'Manage draft settings, order, and operations for your fantasy basketball league.');
+
+    // Add viewport meta tag
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.setAttribute('name', 'viewport');
+      document.head.appendChild(viewport);
+    }
+    viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5');
+
+    // Cleanup function (not needed since we're updating existing tags)
+    return () => {
+      // Cleanup not needed since we're updating existing tags
+    };
+  }, []);
+
   const handleRefresh = useCallback(() => {
     window.location.reload();
   }, []);
@@ -94,36 +122,6 @@ const DraftAdmin: React.FC = () => {
   if (isLoadingDraftState) {
     return (
       <>
-        {/* SEO Meta Tags */}
-        {(() => {
-          React.useEffect(() => {
-            document.title = 'Draft Admin | Renegades Draft';
-
-            // Add meta description
-            let metaDesc = document.querySelector('meta[name="description"]');
-            if (!metaDesc) {
-              metaDesc = document.createElement('meta');
-              metaDesc.setAttribute('name', 'description');
-              document.head.appendChild(metaDesc);
-            }
-            metaDesc.setAttribute('content', 'Manage draft settings, order, and operations for your fantasy basketball league.');
-
-            // Add viewport meta tag
-            let viewport = document.querySelector('meta[name="viewport"]');
-            if (!viewport) {
-              viewport = document.createElement('meta');
-              viewport.setAttribute('name', 'viewport');
-              document.head.appendChild(viewport);
-            }
-            viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5');
-
-            return () => {
-              // Cleanup not needed since we're updating existing tags
-            };
-          }, []);
-          return null;
-        })()}
-
         {/* Accessibility Skip Links */}
         <a
           href="#main-content"
@@ -152,36 +150,6 @@ const DraftAdmin: React.FC = () => {
 
   return (
     <>
-      {/* SEO Meta Tags */}
-      {(() => {
-        React.useEffect(() => {
-          document.title = 'Draft Admin | Renegades Draft';
-
-          // Add meta description
-          let metaDesc = document.querySelector('meta[name="description"]');
-          if (!metaDesc) {
-            metaDesc = document.createElement('meta');
-            metaDesc.setAttribute('name', 'description');
-            document.head.appendChild(metaDesc);
-          }
-          metaDesc.setAttribute('content', 'Manage draft settings, order, and operations for your fantasy basketball league.');
-
-          // Add viewport meta tag
-          let viewport = document.querySelector('meta[name="viewport"]');
-          if (!viewport) {
-            viewport = document.createElement('meta');
-            viewport.setAttribute('name', 'viewport');
-            document.head.appendChild(viewport);
-          }
-          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5');
-
-          return () => {
-            // Cleanup not needed since we're updating existing tags
-          };
-        }, []);
-        return null;
-      })()}
-
       {/* Accessibility Skip Links */}
       <a
         href="#main-content"
@@ -319,7 +287,7 @@ const DraftAdmin: React.FC = () => {
           {/* Operations Section */}
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold text-foreground">Operations</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="p-4 hover:shadow-md transition-shadow">
                 <CardHeader className="p-0 mb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -346,6 +314,21 @@ const DraftAdmin: React.FC = () => {
                 <CardContent className="p-0">
                   <Button asChild className="w-full">
                     <Link to="/admin/draft/keepers">Go to Keeper Management</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="p-4 hover:shadow-md transition-shadow">
+                <CardHeader className="p-0 mb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <RotateCcw className="h-5 w-5" />
+                    Draft Rollback
+                  </CardTitle>
+                  <CardDescription>Rollback draft picks to correct mistakes or restart from a specific point.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Button asChild className="w-full">
+                    <Link to="/admin/draft/rollback">Go to Draft Rollback</Link>
                   </Button>
                 </CardContent>
               </Card>

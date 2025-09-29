@@ -19,6 +19,7 @@ const DraftAdmin = lazy(() => import("./pages/DraftAdmin")); // Lazy load DraftA
 const DraftSettingsGeneralPage = lazy(() => import("./pages/admin/DraftSettingsGeneralPage"));
 const DraftOrderManagerPage = lazy(() => import("./pages/admin/DraftOrderManagerPage"));
 const DraftPicksTraderPage = lazy(() => import("./pages/admin/DraftPicksTraderPage"));
+const DraftRollbackManagerPage = lazy(() => import("./pages/admin/DraftRollbackManagerPage"));
 const KeeperManagementPage = lazy(() => import("./pages/admin/KeeperManagementPage"));
 const LeagueAnalysis = lazy(() => import("./pages/LeagueAnalysis")); // Lazy load LeagueAnalysis
 const Team = lazy(() => import("./pages/Team"));
@@ -78,6 +79,7 @@ const AppContent = () => {
                 <Route path="/admin/draft/settings" element={<ProtectedRoute adminOnly><DraftSettingsGeneralPage /></ProtectedRoute>} />
                 <Route path="/admin/draft/order" element={<ProtectedRoute adminOnly><DraftOrderManagerPage /></ProtectedRoute>} />
                 <Route path="/admin/draft/trades" element={<ProtectedRoute adminOnly><DraftPicksTraderPage /></ProtectedRoute>} />
+                <Route path="/admin/draft/rollback" element={<ProtectedRoute adminOnly><DraftRollbackManagerPage /></ProtectedRoute>} />
                 <Route path="/admin/draft/keepers" element={<ProtectedRoute adminOnly><KeeperManagementPage /></ProtectedRoute>} />
                 <Route path="/league-analysis" element={<ProtectedRoute><LeagueAnalysis /></ProtectedRoute>} />
                 <Route path="/teams" element={<ProtectedRoute><Team /></ProtectedRoute>} />
